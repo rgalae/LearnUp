@@ -20,24 +20,9 @@ users
 
 ---
 
-# 📌 WHY THIS MATTERS
-
-Right now:
-- your rules + apps are inside the code block ❌
-- GitHub will show them as commands (bad)
-
-After fix:
-- clean sections ✔️
-- readable ✔️
-- professional ✔️
-
----
-
-# ✅ AFTER FIXING
-
-Run:
+## 2️⃣ PUSH IT
 
 ```bash
 git add README.md
-git commit -m "fix README formatting"
+git commit -m "clean README"
 git push
