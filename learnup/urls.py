@@ -1,9 +1,8 @@
 from django.contrib import admin
-from django.urls import path, include  # 👈 ADD include
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-
-    # 👇 ADD THIS LINE
     path('courses/', include('courses.urls')),
+    path('quiz/', include('quiz.urls')),  # 👈 ADD THIS
 ]
