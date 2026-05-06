@@ -73,29 +73,42 @@ class Contenu(models.Model):
 
 
 # ---------------------------
-# RESULTAT (MISSING BEFORE)
+# RESULTAT (UPDATED)
 # ---------------------------
 class Resultat(models.Model):
     etudiant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='resultats')
     cours = models.ForeignKey(Cours, on_delete=models.CASCADE, related_name='resultats')
     note = models.FloatField()
 
-    def __str__(self):
-        return f"{self.etudiant} - {self.note}"
+    grade = models.CharField(max_length=2, blank=True, null=True)
+    gpa = models.FloatField(blank=True, null=True)
 
-    class Meta:
-        verbose_name = "Résultat"
-        verbose_name_plural = "Résultats"
-        unique_together = ('etudiant', 'cours')
+    def __str__(self):
+        return f"{self.etudiant} - {self.cours} ({self.note})"
+
+    def save(self, *args, **kwargs):
+        # realistic grading (20 system)
+        if self.note >= 16:
+            self.grade, self.gpa = "A", 4.0
+        elif self.note >= 14:
+            self.grade, self.gpa = "B", 3.5
+        elif self.note >= 12:
+            self.grade, self.gpa = "C", 2.5
+        elif self.note >= 10:
+            self.grade, self.gpa = "D", 2.0
+        else:
+            self.grade, self.gpa = "F", 0.0
+
+        super().save(*args, **kwargs)
 
 
 # ---------------------------
-# PROGRESSION (MISSING BEFORE)
+# PROGRESSION
 # ---------------------------
 class Progression(models.Model):
     etudiant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='progressions')
     cours = models.ForeignKey(Cours, on_delete=models.CASCADE, related_name='progressions')
-    progression = models.FloatField(default=0)  # percentage
+    progression = models.FloatField(default=0)
 
     def __str__(self):
         return f"{self.etudiant} - {self.cours} ({self.progression}%)"
@@ -121,3 +134,14 @@ class Certificat(models.Model):
         verbose_name = "Certificat"
         verbose_name_plural = "Certificats"
         unique_together = ('etudiant', 'cours')
+
+# ---------------------------
+# COMPLETED CONTENT (NEW)
+# ---------------------------
+class CompletedContent(models.Model):
+    etudiant = models.ForeignKey(User, on_delete=models.CASCADE)
+    contenu = models.ForeignKey(Contenu, on_delete=models.CASCADE)
+    date_completed = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('etudiant', 'contenu')
