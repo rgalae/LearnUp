@@ -11,13 +11,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 # ---------------------------
 SECRET_KEY = 'django-insecure-3&f^2pi(k%4udw_oy@2%$#x!l!rlrr!rmu$lry(o1lz3qjyd&x'
+
 DEBUG = True
-ALLOWED_HOSTS = ['testserver', '127.0.0.1', 'localhost']
+
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    'testserver',
+]
 
 # ---------------------------
 # APPS
 # ---------------------------
 INSTALLED_APPS = [
+
+    # django
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -25,13 +33,17 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'rest_framework',  # ✅ DRF
+    # rest framework
+    'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
 
+    # swagger
+    'drf_yasg',
+
+    # local apps
     'users',
     'courses',
     'quiz',
-
-    'rest_framework_simplejwt.token_blacklist',
 ]
 
 # ---------------------------
@@ -48,14 +60,17 @@ MIDDLEWARE = [
 ]
 
 # ---------------------------
-# URLS / TEMPLATES
+# URLS
 # ---------------------------
 ROOT_URLCONF = 'learnup.urls'
 
+# ---------------------------
+# TEMPLATES
+# ---------------------------
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],  # you can add templates later
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -67,6 +82,9 @@ TEMPLATES = [
     },
 ]
 
+# ---------------------------
+# WSGI
+# ---------------------------
 WSGI_APPLICATION = 'learnup.wsgi.application'
 
 # ---------------------------
@@ -74,8 +92,12 @@ WSGI_APPLICATION = 'learnup.wsgi.application'
 # ---------------------------
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'learnup_db',
+        'USER': 'postgres',
+        'PASSWORD': 'postgres123',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
@@ -83,27 +105,61 @@ DATABASES = {
 # PASSWORD VALIDATION
 # ---------------------------
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
 
 # ---------------------------
-# DJANGO REST FRAMEWORK
+# DRF
 # ---------------------------
 REST_FRAMEWORK = {
+
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
     ),
 }
 
 # ---------------------------
-# JWT CONFIG
+# JWT
 # ---------------------------
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+
     'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+# ---------------------------
+# SWAGGER
+# ---------------------------
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,
+
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': 'JWT Authorization header using Bearer token. Example: "Bearer your_token"',
+        }
+    },
 }
 
 # ---------------------------
@@ -136,17 +192,21 @@ LOGGING = {
 # INTERNATIONALIZATION
 # ---------------------------
 LANGUAGE_CODE = 'en-us'
+
 TIME_ZONE = 'Africa/Casablanca'
 
 USE_I18N = True
 USE_TZ = True
 
 # ---------------------------
-# STATIC / MEDIA
+# STATIC FILES
 # ---------------------------
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# ---------------------------
+# MEDIA FILES
+# ---------------------------
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
