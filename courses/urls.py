@@ -6,7 +6,12 @@ urlpatterns = [
     # courses
     path('', views.get_courses),
     path('create/', views.create_course),
+
     path('<int:id>/', views.cours_detail),
+
+    # NEW
+    path('<int:id>/update/', views.update_course),
+    path('<int:id>/delete/', views.delete_course),
 
     # enrollment
     path('inscription/', views.inscrire),

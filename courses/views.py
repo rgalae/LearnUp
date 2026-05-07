@@ -580,3 +580,80 @@ def download_content(request, contenu_id):
         as_attachment=True,
         filename=os.path.basename(file_path)
     )
+
+
+# =====================================================
+# UPDATE COURSE
+# =====================================================
+
+@swagger_auto_schema(
+    method='put',
+    request_body=CreateCourseSerializer
+)
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def update_course(request, id):
+
+    try:
+        cours = Cours.objects.get(id=id)
+    except Cours.DoesNotExist:
+        return Response(
+            {"error": "Course not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if cours.enseignant != request.user:
+        return Response(
+            {"error": "Not your course"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    serializer = CreateCourseSerializer(
+        data=request.data
+    )
+
+    if not serializer.is_valid():
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    cours.titre = serializer.validated_data['titre']
+    cours.description = serializer.validated_data['description']
+
+    cours.save()
+
+    return Response({
+        "message": "Course updated"
+    })
+
+
+# =====================================================
+# DELETE COURSE
+# =====================================================
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def delete_course(request, id):
+
+    try:
+        cours = Cours.objects.get(id=id)
+    except Cours.DoesNotExist:
+        return Response(
+            {"error": "Course not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if cours.enseignant != request.user:
+        return Response(
+            {"error": "Not your course"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    cours.delete()
+
+    return Response({
+        "message": "Course deleted"
+    })

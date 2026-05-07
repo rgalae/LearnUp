@@ -1,3 +1,5 @@
+from django.contrib.auth import get_user_model
+from .serializers import RegisterSerializer
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth import authenticate
@@ -78,3 +80,56 @@ def logout_view(request):
 
     except Exception:
         return JsonResponse({"error": "Invalid token"}, status=400)
+    
+
+    # ---------------------------
+# REGISTER
+# ---------------------------
+
+@csrf_exempt
+def register_view(request):
+
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "POST required"},
+            status=400
+        )
+
+    try:
+        data = json.loads(request.body)
+    except:
+        return JsonResponse(
+            {"error": "Invalid JSON"},
+            status=400
+        )
+
+    serializer = RegisterSerializer(data=data)
+
+    if not serializer.is_valid():
+        return JsonResponse(
+            serializer.errors,
+            status=400
+        )
+
+    User = get_user_model()
+
+    if User.objects.filter(
+        username=serializer.validated_data['username']
+    ).exists():
+
+        return JsonResponse(
+            {"error": "Username already exists"},
+            status=400
+        )
+
+    user = User.objects.create_user(
+        username=serializer.validated_data['username'],
+        password=serializer.validated_data['password'],
+        role=serializer.validated_data['role']
+    )
+
+    return JsonResponse({
+        "message": "User created",
+        "username": user.username,
+        "role": user.role
+    })
