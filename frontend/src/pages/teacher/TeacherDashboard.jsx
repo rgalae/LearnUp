@@ -1,10 +1,8 @@
-import DashboardLayout from "../../layouts/DashboardLayout";
-
 function TeacherDashboard() {
   return (
-    <DashboardLayout>
-      <div className="text-3xl font-bold">Teacher Dashboard</div>
-    </DashboardLayout>
+    <div>
+      <h1 className="text-5xl font-black">Teacher Dashboard</h1>
+    </div>
   );
 }
 

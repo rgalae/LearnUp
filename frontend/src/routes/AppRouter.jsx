@@ -2,12 +2,17 @@ import { Routes, Route } from "react-router-dom";
 
 import ProtectedRoute from "./ProtectedRoute";
 
+import DashboardLayout from "../layouts/DashboardLayout";
+
 import Home from "../pages/public/Home";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 
 import StudentDashboard from "../pages/student/StudentDashboard";
 import TeacherDashboard from "../pages/teacher/TeacherDashboard";
+
+import StudentCourses from "../pages/student/StudentCourses";
+import StudentResults from "../pages/student/StudentResults";
 
 function AppRouter() {
   return (
@@ -22,7 +27,9 @@ function AppRouter() {
         path="/student"
         element={
           <ProtectedRoute>
-            <StudentDashboard />
+            <DashboardLayout>
+              <StudentDashboard />
+            </DashboardLayout>
           </ProtectedRoute>
         }
       />
@@ -31,7 +38,31 @@ function AppRouter() {
         path="/teacher"
         element={
           <ProtectedRoute>
-            <TeacherDashboard />
+            <DashboardLayout>
+              <TeacherDashboard />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/student/courses"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <StudentCourses />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/student/results"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <StudentResults />
+            </DashboardLayout>
           </ProtectedRoute>
         }
       />
