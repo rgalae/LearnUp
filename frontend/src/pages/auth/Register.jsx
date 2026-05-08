@@ -1,15 +1,20 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import AuthLayout from "../../components/ui/AuthLayout";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 
+import { registerUser } from "../../services/authService";
+
 function Register() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
+    role: "student",
   });
 
   const handleChange = (e) => {
@@ -19,10 +24,20 @@ function Register() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log(formData);
+    try {
+      await registerUser(formData);
+
+      alert("Account created successfully");
+
+      navigate("/login");
+    } catch (error) {
+      console.log(error.response?.data);
+
+      alert(JSON.stringify(error.response?.data || "Registration failed"));
+    }
   };
 
   return (
@@ -46,6 +61,19 @@ function Register() {
           value={formData.email}
           onChange={handleChange}
         />
+        <select
+          name="role"
+          value={formData.role}
+          onChange={handleChange}
+          className="
+    w-full p-4 rounded-2xl
+    bg-white/5 border border-white/10
+    text-white outline-none
+  "
+        >
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+        </select>
 
         <Input
           type="password"

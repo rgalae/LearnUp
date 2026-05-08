@@ -8,11 +8,11 @@ function Sidebar() {
     },
     {
       name: "Courses",
-      path: "/student",
+      path: "/student/courses",
     },
     {
       name: "Results",
-      path: "/student",
+      path: "/student/results",
     },
   ];
 
@@ -34,6 +34,7 @@ function Sidebar() {
             <NavLink
               key={link.name}
               to={link.path}
+              end={link.path === "/student"}
               className={({ isActive }) =>
                 `
                 flex items-center gap-3
