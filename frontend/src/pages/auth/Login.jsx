@@ -1,8 +1,12 @@
 import { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 import { loginUser } from "../../services/authService";
 import { AuthContext } from "../../auth/AuthContext";
+
+import AuthLayout from "../../components/ui/AuthLayout";
+import Input from "../../components/ui/Input";
+import Button from "../../components/ui/Button";
 
 function Login() {
   const navigate = useNavigate();
@@ -37,39 +41,40 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0B1120]">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-3xl w-[400px] space-y-5"
-      >
-        <h1 className="text-3xl font-bold text-white">Login</h1>
-
-        <input
+    <AuthLayout
+      title="Welcome Back"
+      subtitle="Login to continue your learning journey"
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Input
           type="text"
           name="username"
           placeholder="Username"
           value={formData.username}
           onChange={handleChange}
-          className="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white outline-none"
         />
 
-        <input
+        <Input
           type="password"
           name="password"
           placeholder="Password"
           value={formData.password}
           onChange={handleChange}
-          className="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white outline-none"
         />
 
-        <button
-          type="submit"
-          className="w-full p-4 rounded-xl bg-indigo-500 hover:bg-indigo-400 transition font-semibold"
-        >
-          Login
-        </button>
+        <Button type="submit">Login</Button>
+
+        <p className="text-center text-gray-400 text-sm pt-4">
+          Don’t have an account?{" "}
+          <Link
+            to="/register"
+            className="text-indigo-400 hover:text-indigo-300"
+          >
+            Register
+          </Link>
+        </p>
       </form>
-    </div>
+    </AuthLayout>
   );
 }
 
