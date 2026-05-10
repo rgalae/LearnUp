@@ -30,13 +30,19 @@ function Login() {
 
     try {
       const data = await loginUser(formData);
-
+      console.log(data);
       login(data.access);
 
-      navigate("/student");
+      const role = data.role;
+
+      if (role === "teacher") {
+        navigate("/teacher");
+      } else {
+        navigate("/student");
+      }
     } catch (error) {
-      console.log(error);
-      alert("Login failed");
+      console.log(error.response?.data);
+      alert(JSON.stringify(error.response?.data));
     }
   };
 

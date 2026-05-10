@@ -1,3 +1,4 @@
+from .jwt_serializer import CustomTokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from .serializers import RegisterSerializer
 from django.views.decorators.csrf import csrf_exempt
@@ -13,6 +14,7 @@ import json
 
 @csrf_exempt
 def login_view(request):
+
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=400)
 
@@ -29,11 +31,12 @@ def login_view(request):
     if user is None:
         return JsonResponse({"error": "Invalid credentials"}, status=401)
 
-    refresh = RefreshToken.for_user(user)
+    refresh = CustomTokenObtainPairSerializer.get_token(user)
 
     return JsonResponse({
-        "access": str(refresh.access_token),
         "refresh": str(refresh),
+        "access": str(refresh.access_token),
+        "role": user.role,
     })
 # ---------------------------
 # REFRESH TOKEN
