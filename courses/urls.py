@@ -1,4 +1,5 @@
 from django.urls import path
+
 from . import views
 
 urlpatterns = [
@@ -8,8 +9,9 @@ urlpatterns = [
     path('create/', views.create_course),
 
     path('<int:id>/', views.cours_detail),
+    path('teacher/<int:id>/', views.teacher_course_detail),
 
-    # NEW
+    # manage courses
     path('<int:id>/update/', views.update_course),
     path('<int:id>/delete/', views.delete_course),
 
@@ -21,16 +23,6 @@ urlpatterns = [
     path('complete/', views.complete_content),
     path('download/<int:contenu_id>/', views.download_content),
 
-    # results
-    path('results/', views.get_results),
-    path('results/pdf/', views.generate_pdf),
-    path('resultat/pdf/', views.generate_pdf),
-
     # progress
     path('progress/', views.get_progress),
-    path('cgpa/', views.get_cgpa),
-
-    # certificates
-    path('certificat/<int:cours_id>/', views.get_certificat),
-    path('certificat/<int:cours_id>/pdf/', views.certificat_pdf),
 ]

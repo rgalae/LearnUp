@@ -1,17 +1,11 @@
 from django.shortcuts import get_object_or_404
-from django.http import FileResponse
-from django.http import HttpResponse, JsonResponse
-
-from django.conf import settings
+from django.http import FileResponse, HttpResponse
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
-
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
 
 from functools import wraps
 
@@ -21,7 +15,6 @@ from .models import (
     Cours,
     Inscription,
     Contenu,
-    Resultat,
     Certificat,
     Progression,
     CompletedContent
@@ -34,9 +27,20 @@ from .serializers import (
     EnrollSerializer,
     CompleteContentSerializer,
     ProgressionSerializer,
-    ResultSerializer,
     ContenuSerializer
 )
+
+from results.models import Resultat
+
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer
+)
+
+from reportlab.lib.styles import getSampleStyleSheet
+
+from .utils import update_course_progress
 
 
 # =====================================================
@@ -44,26 +48,36 @@ from .serializers import (
 # =====================================================
 
 def teacher_required(view_func):
+
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
+
         if request.user.role != "teacher":
+
             return Response(
                 {"error": "Teacher only"},
                 status=status.HTTP_403_FORBIDDEN
             )
+
         return view_func(request, *args, **kwargs)
+
     return wrapper
 
 
 def student_required(view_func):
+
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
+
         if request.user.role != "student":
+
             return Response(
                 {"error": "Student only"},
                 status=status.HTTP_403_FORBIDDEN
             )
+
         return view_func(request, *args, **kwargs)
+
     return wrapper
 
 
@@ -72,10 +86,33 @@ def student_required(view_func):
 # =====================================================
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def get_courses(request):
 
-    courses = Cours.objects.all()
+    if request.user.is_authenticated:
+
+        if request.user.role == "student":
+
+            course_ids = Inscription.objects.filter(
+                etudiant=request.user
+            ).values_list('cours_id', flat=True)
+
+            courses = Cours.objects.filter(
+                id__in=course_ids
+            )
+
+        elif request.user.role == "teacher":
+
+            courses = Cours.objects.filter(
+                enseignant=request.user
+            )
+
+        else:
+
+            courses = Cours.objects.all()
+
+    else:
+
+        courses = Cours.objects.all()
 
     serializer = CourseListSerializer(
         courses,
@@ -99,6 +136,7 @@ def create_course(request):
     )
 
     if not serializer.is_valid():
+
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
@@ -127,13 +165,16 @@ def add_content(request, cours_id):
 
     try:
         cours = Cours.objects.get(id=cours_id)
+
     except Cours.DoesNotExist:
+
         return Response(
             {"error": "Course not found"},
             status=status.HTTP_404_NOT_FOUND
         )
 
     if cours.enseignant != request.user:
+
         return Response(
             {"error": "Not your course"},
             status=status.HTTP_403_FORBIDDEN
@@ -141,9 +182,10 @@ def add_content(request, cours_id):
 
     titre = request.data.get("titre")
     video_url = request.data.get("video_url")
-    fichier = request.FILES.get("fichier")
+    fichier = request.data.get("fichier")
 
     if not titre:
+
         return Response(
             {"error": "Title required"},
             status=status.HTTP_400_BAD_REQUEST
@@ -176,6 +218,7 @@ def inscrire(request):
     )
 
     if not serializer.is_valid():
+
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
@@ -185,7 +228,9 @@ def inscrire(request):
 
     try:
         cours = Cours.objects.get(id=cours_id)
+
     except Cours.DoesNotExist:
+
         return Response(
             {"error": "Course not found"},
             status=status.HTTP_404_NOT_FOUND
@@ -212,7 +257,9 @@ def cours_detail(request, id):
 
     try:
         cours = Cours.objects.get(id=id)
+
     except Cours.DoesNotExist:
+
         return Response(
             {"error": "Course not found"},
             status=status.HTTP_404_NOT_FOUND
@@ -222,6 +269,7 @@ def cours_detail(request, id):
         etudiant=request.user,
         cours=cours
     ).exists():
+
         return Response(
             {"error": "Not enrolled"},
             status=status.HTTP_403_FORBIDDEN
@@ -239,12 +287,48 @@ def cours_detail(request, id):
         ).exists()
 
         serialized = ContenuSerializer(c).data
+
         serialized['completed'] = completed
 
         content_data.append(serialized)
 
     course_data = CourseDetailSerializer(cours).data
+
     course_data['contenus'] = content_data
+
+    return Response(course_data)
+
+
+# =====================================================
+# TEACHER COURSE DETAIL
+# =====================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def teacher_course_detail(request, id):
+
+    try:
+        cours = Cours.objects.get(
+            id=id,
+            enseignant=request.user
+        )
+
+    except Cours.DoesNotExist:
+
+        return Response(
+            {"error": "Course not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    contenus = Contenu.objects.filter(cours=cours)
+
+    course_data = CourseDetailSerializer(cours).data
+
+    course_data["contenus"] = ContenuSerializer(
+        contenus,
+        many=True
+    ).data
 
     return Response(course_data)
 
@@ -267,6 +351,7 @@ def complete_content(request):
     )
 
     if not serializer.is_valid():
+
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
@@ -276,7 +361,9 @@ def complete_content(request):
 
     try:
         contenu = Contenu.objects.get(id=contenu_id)
+
     except Contenu.DoesNotExist:
+
         return Response(
             {"error": "Content not found"},
             status=status.HTTP_404_NOT_FOUND
@@ -286,84 +373,25 @@ def complete_content(request):
         etudiant=request.user,
         cours=contenu.cours
     ).exists():
+
         return Response(
             {"error": "Not enrolled"},
             status=status.HTTP_403_FORBIDDEN
         )
 
-    CompletedContent.objects.get_or_create(
+    completed, created = CompletedContent.objects.get_or_create(
         etudiant=request.user,
         contenu=contenu
     )
 
-    total_contents = Contenu.objects.filter(
-        cours=contenu.cours
-    ).count()
-
-    completed_contents = CompletedContent.objects.filter(
-        etudiant=request.user,
-        contenu__cours=contenu.cours
-    ).count()
-
-    progress = int(
-        (completed_contents / total_contents) * 100
-    )
-
-    Progression.objects.update_or_create(
-        etudiant=request.user,
-        cours=contenu.cours,
-        defaults={"progression": progress}
+    progress = update_course_progress(
+        request.user,
+        contenu.cours
     )
 
     return Response({
         "message": "Content completed",
         "progression": progress
-    })
-
-
-# =====================================================
-# RESULTS
-# =====================================================
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_results(request):
-
-    results = Resultat.objects.filter(
-        etudiant=request.user
-    )
-
-    serializer = ResultSerializer(
-        results,
-        many=True
-    )
-
-    return Response(serializer.data)
-
-
-# =====================================================
-# CGPA
-# =====================================================
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_cgpa(request):
-
-    results = Resultat.objects.filter(
-        etudiant=request.user
-    )
-
-    if not results.exists():
-        return Response({
-            "cgpa": 0
-        })
-
-    total = sum(r.gpa or 0 for r in results)
-
-    cgpa = total / results.count()
-
-    return Response({
-        "cgpa": round(cgpa, 2)
     })
 
 
@@ -402,6 +430,7 @@ def get_certificat(request, cours_id):
         )
 
         if result.note < 10:
+
             return Response(
                 {"error": "Insufficient grade"},
                 status=status.HTTP_403_FORBIDDEN
@@ -418,6 +447,7 @@ def get_certificat(request, cours_id):
         })
 
     except Resultat.DoesNotExist:
+
         return Response(
             {"error": "No result found"},
             status=status.HTTP_404_NOT_FOUND
@@ -439,6 +469,7 @@ def certificat_pdf(request, cours_id):
         )
 
         if result.note < 10:
+
             return Response(
                 {"error": "Insufficient grade"},
                 status=status.HTTP_403_FORBIDDEN
@@ -485,51 +516,11 @@ def certificat_pdf(request, cours_id):
         return response
 
     except Resultat.DoesNotExist:
+
         return Response(
             {"error": "No result found"},
             status=status.HTTP_404_NOT_FOUND
         )
-
-
-# =====================================================
-# RESULTS PDF
-# =====================================================
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def generate_pdf(request):
-
-    results = Resultat.objects.filter(
-        etudiant=request.user
-    )
-
-    response = HttpResponse(
-        content_type='application/pdf'
-    )
-
-    response['Content-Disposition'] = (
-        f'attachment; filename="{request.user.username}_results.pdf"'
-    )
-
-    doc = SimpleDocTemplate(response)
-
-    styles = getSampleStyleSheet()
-
-    content = [
-        Paragraph("Student Results", styles["Title"])
-    ]
-
-    for r in results:
-        content.append(
-            Paragraph(
-                f"{r.cours.titre} : {r.note}",
-                styles["Normal"]
-            )
-        )
-
-    doc.build(content)
-
-    return response
 
 
 # =====================================================
@@ -546,6 +537,7 @@ def download_content(request, contenu_id):
     )
 
     if not contenu.fichier:
+
         return Response(
             {"error": "No file attached"},
             status=status.HTTP_404_NOT_FOUND
@@ -562,6 +554,7 @@ def download_content(request, contenu_id):
     ).exists()
 
     if not (is_teacher_owner or is_enrolled_student):
+
         return Response(
             {"error": "Access denied"},
             status=status.HTTP_403_FORBIDDEN
@@ -570,6 +563,7 @@ def download_content(request, contenu_id):
     file_path = contenu.fichier.path
 
     if not os.path.exists(file_path):
+
         return Response(
             {"error": "File not found"},
             status=status.HTTP_404_NOT_FOUND
@@ -597,13 +591,16 @@ def update_course(request, id):
 
     try:
         cours = Cours.objects.get(id=id)
+
     except Cours.DoesNotExist:
+
         return Response(
             {"error": "Course not found"},
             status=status.HTTP_404_NOT_FOUND
         )
 
     if cours.enseignant != request.user:
+
         return Response(
             {"error": "Not your course"},
             status=status.HTTP_403_FORBIDDEN
@@ -614,12 +611,14 @@ def update_course(request, id):
     )
 
     if not serializer.is_valid():
+
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
 
     cours.titre = serializer.validated_data['titre']
+
     cours.description = serializer.validated_data['description']
 
     cours.save()
@@ -640,13 +639,16 @@ def delete_course(request, id):
 
     try:
         cours = Cours.objects.get(id=id)
+
     except Cours.DoesNotExist:
+
         return Response(
             {"error": "Course not found"},
             status=status.HTTP_404_NOT_FOUND
         )
 
     if cours.enseignant != request.user:
+
         return Response(
             {"error": "Not your course"},
             status=status.HTTP_403_FORBIDDEN

@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import FeatureCard from "../../components/ui/FeatureCard";
 
 function Home() {
@@ -23,13 +25,19 @@ function Home() {
           </p>
 
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button className="px-8 py-4 rounded-2xl bg-indigo-500 hover:bg-indigo-400 transition-all font-semibold">
+            <Link
+              to="/register"
+              className="px-8 py-4 rounded-2xl bg-indigo-500 hover:bg-indigo-400 transition-all font-semibold"
+            >
               Get Started
-            </button>
+            </Link>
 
-            <button className="px-8 py-4 rounded-2xl border border-white/10 hover:border-indigo-400 transition-all">
+            <Link
+              to="/courses"
+              className="px-8 py-4 rounded-2xl border border-white/10 hover:border-indigo-400 transition-all"
+            >
               Explore Courses
-            </button>
+            </Link>
           </div>
         </div>
       </section>

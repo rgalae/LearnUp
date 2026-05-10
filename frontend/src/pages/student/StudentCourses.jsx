@@ -1,29 +1,37 @@
-import { useEffect, useState } from "react";
-
 import { Link } from "react-router-dom";
+
+import { useEffect, useState } from "react";
 
 import ProgressBar from "../../components/ui/ProgressBar";
 
-import { getCourses } from "../../services/courseService";
+import {
+  getCourses,
+  enrollCourse,
+  getProgress,
+} from "../../services/courseService";
 
 function StudentCourses() {
   const [courses, setCourses] = useState([]);
+
+  const [progressions, setProgressions] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchCourses();
+    fetchData();
   }, []);
 
-  const fetchCourses = async () => {
+  const fetchData = async () => {
     try {
-      const data = await getCourses();
+      const coursesData = await getCourses();
 
-      console.log(data);
+      const progressData = await getProgress();
 
-      setCourses(data);
+      setCourses(coursesData);
+
+      setProgressions(progressData);
     } catch (err) {
       console.log(err);
 
@@ -31,6 +39,26 @@ function StudentCourses() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEnroll = async (courseId) => {
+    try {
+      await enrollCourse(courseId);
+
+      fetchData();
+
+      alert("Enrollment successful");
+    } catch (err) {
+      console.log(err);
+
+      alert("Already enrolled or failed");
+    }
+  };
+
+  const getCourseProgress = (courseTitle) => {
+    const progress = progressions.find((p) => p.cours === courseTitle);
+
+    return progress ? progress.progression : 0;
   };
 
   if (loading) {
@@ -55,8 +83,7 @@ function StudentCourses() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {courses.map((course) => (
-          <Link
-            to={`/student/courses/${course.id}`}
+          <div
             key={course.id}
             className="bg-[#0d1526] border border-white/[0.06] rounded-2xl p-5 hover:border-indigo-500 transition-all"
           >
@@ -68,10 +95,30 @@ function StudentCourses() {
               Teacher: {course.enseignant}
             </p>
 
-            <div className="mt-5">
-              <ProgressBar label="Progress" value={0} color="indigo" />
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => handleEnroll(course.id)}
+                className="bg-indigo-600 hover:bg-indigo-500 transition px-4 py-2 rounded-xl text-white text-sm"
+              >
+                Enroll
+              </button>
+
+              <Link
+                to={`/student/courses/${course.id}`}
+                className="border border-white/10 px-4 py-2 rounded-xl text-white text-sm"
+              >
+                Open
+              </Link>
             </div>
-          </Link>
+
+            <div className="mt-5">
+              <ProgressBar
+                label="Progress"
+                value={getCourseProgress(course.titre)}
+                color="indigo"
+              />
+            </div>
+          </div>
         ))}
       </div>
     </div>

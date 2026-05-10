@@ -7,23 +7,31 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import Home from "../pages/public/Home";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
+import PublicCourses from "../pages/public/PublicCourses";
 
 import StudentDashboard from "../pages/student/StudentDashboard";
 import StudentCourses from "../pages/student/StudentCourses";
 import StudentResults from "../pages/student/StudentResults";
 import CourseDetail from "../pages/student/CourseDetail";
+import QuizPage from "../pages/student/QuizPage";
 
 import TeacherDashboard from "../pages/teacher/TeacherDashboard";
 import TeacherCourses from "../pages/teacher/TeacherCourses";
 import TeacherResults from "../pages/teacher/TeacherResults";
 import TeacherStudents from "../pages/teacher/TeacherStudents";
+import TeacherCreateCourse from "../pages/teacher/TeacherCreateCourse";
+import TeacherCourseDetail from "../pages/teacher/TeacherCourseDetail";
 
 function AppRouter() {
   return (
     <Routes>
       {/* PUBLIC ROUTES */}
       <Route path="/" element={<Home />} />
+
+      <Route path="/courses" element={<PublicCourses />} />
+
       <Route path="/login" element={<Login />} />
+
       <Route path="/register" element={<Register />} />
 
       {/* STUDENT ROUTES */}
@@ -50,22 +58,32 @@ function AppRouter() {
       />
 
       <Route
-        path="/student/results"
+        path="/student/courses/:id"
         element={
           <ProtectedRoute>
             <DashboardLayout>
-              <StudentResults />
+              <CourseDetail />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/quiz/:coursId"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <QuizPage />
             </DashboardLayout>
           </ProtectedRoute>
         }
       />
 
       <Route
-        path="/student/courses/:id"
+        path="/student/results"
         element={
           <ProtectedRoute>
             <DashboardLayout>
-              <CourseDetail />
+              <StudentResults />
             </DashboardLayout>
           </ProtectedRoute>
         }
@@ -89,6 +107,28 @@ function AppRouter() {
           <ProtectedRoute>
             <DashboardLayout>
               <TeacherCourses />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/teacher/courses/:id"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <TeacherCourseDetail />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/teacher/create-course"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <TeacherCreateCourse />
             </DashboardLayout>
           </ProtectedRoute>
         }

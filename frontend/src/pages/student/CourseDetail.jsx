@@ -1,11 +1,17 @@
+import { Link } from "react-router-dom";
+
 import { useEffect, useState } from "react";
 
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+
+import Button from "../../components/ui/Button";
 
 import { getCourseDetail, completeContent } from "../../services/courseService";
 
 function CourseDetail() {
   const { id } = useParams();
+
+  const navigate = useNavigate();
 
   const [course, setCourse] = useState(null);
 
@@ -53,10 +59,23 @@ function CourseDetail() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
+      <Button variant="ghost" className="mb-2" onClick={() => navigate(-1)}>
+        ← Back
+      </Button>
+
       <div>
         <h1 className="text-3xl font-bold text-white">{course.titre}</h1>
 
         <p className="text-slate-400 mt-3">{course.description}</p>
+      </div>
+
+      <div className="mt-6">
+        <Link
+          to={`/student/quiz/${course.id}`}
+          className="bg-indigo-600 hover:bg-indigo-500 transition px-5 py-3 rounded-xl text-white inline-block"
+        >
+          Start Quiz
+        </Link>
       </div>
 
       <div className="space-y-4">

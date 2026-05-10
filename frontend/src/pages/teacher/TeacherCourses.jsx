@@ -1,75 +1,76 @@
+import { useEffect, useState } from "react";
+
+import { Link } from "react-router-dom";
+
+import { getCourses } from "../../services/courseService";
+
 function TeacherCourses() {
-  const courses = [
-    {
-      id: 1,
-      title: "React Advanced",
-      students: 42,
-      completion: "78%",
-      status: "Active",
-    },
-    {
-      id: 2,
-      title: "Python for Data Science",
-      students: 31,
-      completion: "64%",
-      status: "Active",
-    },
-    {
-      id: 3,
-      title: "UI/UX Fundamentals",
-      students: 19,
-      completion: "91%",
-      status: "Completed",
-    },
-  ];
+  const [courses, setCourses] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      const data = await getCourses();
+
+      setCourses(data);
+    } catch (err) {
+      console.log(err);
+
+      setError("Failed to load courses");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="text-white text-center py-10">Loading courses...</div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-red-400 text-center py-10">{error}</div>;
+  }
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Teacher Courses</h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Teacher Courses</h1>
 
-        <p className="text-slate-400 mt-2">
-          Manage your created courses and track student progress.
-        </p>
+          <p className="text-slate-400 mt-2">Manage your created courses.</p>
+        </div>
+
+        <Link
+          to="/teacher/create-course"
+          className="bg-indigo-600 hover:bg-indigo-500 transition px-5 py-3 rounded-xl text-white"
+        >
+          Create Course
+        </Link>
       </div>
 
       <div className="grid gap-5">
         {courses.map((course) => (
-          <div
+          <Link
+            to={`/teacher/courses/${course.id}`}
             key={course.id}
-            className="bg-[#0d1526] border border-white/10 rounded-2xl p-6"
+            className="bg-[#0d1526] border border-white/10 rounded-2xl p-6 block hover:border-indigo-500/30 transition"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-white">
-                  {course.title}
-                </h2>
+            <h2 className="text-xl font-semibold text-white">{course.titre}</h2>
 
-                <p className="text-slate-400 mt-2">
-                  {course.students} students enrolled
-                </p>
-              </div>
+            <p className="text-slate-400 mt-3">{course.description}</p>
 
-              <span className="px-4 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-sm">
-                {course.status}
-              </span>
-            </div>
-
-            <div className="mt-6">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-slate-400">Completion Rate</span>
-
-                <span className="text-white">{course.completion}</span>
-              </div>
-
-              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-indigo-500 rounded-full"
-                  style={{ width: course.completion }}
-                />
-              </div>
-            </div>
-          </div>
+            <p className="text-indigo-400 text-sm mt-4">
+              Teacher: {course.enseignant}
+            </p>
+          </Link>
         ))}
       </div>
     </div>

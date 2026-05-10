@@ -4,7 +4,7 @@ from .models import (
     Cours,
     Contenu,
     Progression,
-    Resultat
+   
 )
 
 
@@ -116,21 +116,3 @@ class ProgressionSerializer(serializers.ModelSerializer):
         ]
 
 
-# =====================================================
-# RESULT SERIALIZER
-# =====================================================
-
-class ResultSerializer(serializers.ModelSerializer):
-
-    cours = serializers.CharField(
-        source='cours.titre'
-    )
-
-    class Meta:
-        model = Resultat
-        fields = [
-            'cours',
-            'note',
-            'grade',
-            'gpa'
-        ]

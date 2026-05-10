@@ -27,9 +27,9 @@ from .serializers import (
     CreateResponseSerializer
 )
 
+from results.models import Resultat
+
 from courses.models import (
-    Resultat,
-    Progression,
     Inscription
 )
 
@@ -37,6 +37,8 @@ from courses.views import (
     student_required,
     teacher_required
 )
+
+from courses.utils import update_course_progress
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +51,6 @@ logger = logging.getLogger(__name__)
 @permission_classes([IsAuthenticated])
 def get_quiz(request, cours_id):
 
-    # enrollment check
     if not Inscription.objects.filter(
         etudiant=request.user,
         cours_id=cours_id
@@ -70,19 +71,6 @@ def get_quiz(request, cours_id):
         return Response(
             {"error": "Quiz not found"},
             status=status.HTTP_404_NOT_FOUND
-        )
-
-    # prevent retake if passed
-    existing = Resultat.objects.filter(
-        etudiant=request.user,
-        cours_id=cours_id
-    ).first()
-
-    if existing and existing.note >= 10:
-
-        return Response(
-            {"error": "Quiz already completed"},
-            status=status.HTTP_403_FORBIDDEN
         )
 
     serializer = QuizSerializer(quiz)
@@ -128,24 +116,12 @@ def submit_quiz(request):
             status=status.HTTP_404_NOT_FOUND
         )
 
-    # prevent retake
-    existing = Resultat.objects.filter(
-        etudiant=request.user,
-        cours=quiz.cours
-    ).first()
-
-    if existing and existing.note >= 10:
-
-        return Response(
-            {"error": "Already passed"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
     score = 0
 
     for ans in answers:
 
         try:
+
             reponse = Reponse.objects.get(
                 id=ans['reponse_id'],
                 question_id=ans['question_id']
@@ -163,33 +139,36 @@ def submit_quiz(request):
         (score / total) * 100
     ) if total > 0 else 0
 
-    # save attempt
-    Tentative.objects.create(
-        etudiant=request.user,
-        quiz=quiz,
-        score=final_score,
-        date_fin=timezone.now()
-    )
+    try:
 
-    # save result
-    Resultat.objects.update_or_create(
-        etudiant=request.user,
-        cours=quiz.cours,
-        defaults={
-            "note": final_score
-        }
-    )
+        Tentative.objects.create(
+            etudiant=request.user,
+            quiz=quiz,
+            score=final_score,
+            date_fin=timezone.now()
+        )
 
-    # progression
-    progress = 100 if final_score >= 10 else 50
+        Resultat.objects.update_or_create(
+            etudiant=request.user,
+            cours=quiz.cours,
+            defaults={
+                "note": final_score
+            }
+        )
 
-    Progression.objects.update_or_create(
-        etudiant=request.user,
-        cours=quiz.cours,
-        defaults={
-            "progression": progress
-        }
-    )
+        progress = update_course_progress(
+            request.user,
+            quiz.cours
+        )
+
+    except Exception as e:
+
+        print(e)
+
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     logger.info(
         f"{request.user} submitted quiz {quiz.id} with score {final_score}"
@@ -197,7 +176,8 @@ def submit_quiz(request):
 
     return Response({
         "success": True,
-        "score": final_score
+        "score": final_score,
+        "progression": progress
     })
 
 
