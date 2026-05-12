@@ -57,10 +57,6 @@ function QuizPage() {
       });
 
       setScore(data.score);
-
-      setTimeout(() => {
-        navigate("/student/courses");
-      }, 1500);
     } catch (err) {
       console.log(err);
 
@@ -87,8 +83,23 @@ function QuizPage() {
       </div>
 
       {score !== null && (
-        <div className="bg-green-600/20 border border-green-500 text-green-300 p-5 rounded-2xl">
-          Your score: {score}%
+        <div className="bg-green-600/20 border border-green-500 text-green-300 p-6 rounded-2xl space-y-4">
+          <h2 className="text-2xl font-bold">Quiz Completed 🎉</h2>
+
+          <p className="text-lg">Your score: {score}%</p>
+
+          <div className="flex gap-4 pt-2">
+            <Button onClick={() => navigate("/student/results")}>
+              View Results
+            </Button>
+
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/student/courses")}
+            >
+              Back to Courses
+            </Button>
+          </div>
         </div>
       )}
 

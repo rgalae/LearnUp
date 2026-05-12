@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+
 from drf_yasg.utils import swagger_auto_schema
 
 from functools import wraps
@@ -82,37 +83,75 @@ def student_required(view_func):
 
 
 # =====================================================
-# GET COURSES
+# GET ALL COURSES
 # =====================================================
 
 @api_view(['GET'])
 def get_courses(request):
 
-    if request.user.is_authenticated:
+    courses = Cours.objects.all()
 
-        if request.user.role == "student":
+    serializer = CourseListSerializer(
+        courses,
+        many=True
+    )
 
-            course_ids = Inscription.objects.filter(
-                etudiant=request.user
-            ).values_list('cours_id', flat=True)
+    return Response(serializer.data)
 
-            courses = Cours.objects.filter(
-                id__in=course_ids
-            )
 
-        elif request.user.role == "teacher":
+# =====================================================
+# MY COURSES
+# =====================================================
 
-            courses = Cours.objects.filter(
-                enseignant=request.user
-            )
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@student_required
+def my_courses(request):
 
-        else:
+    inscriptions = Inscription.objects.filter(
+        etudiant=request.user
+    )
 
-            courses = Cours.objects.all()
+    data = []
 
-    else:
+    for inscription in inscriptions:
 
-        courses = Cours.objects.all()
+        cours = inscription.cours
+
+        progress = Progression.objects.filter(
+            etudiant=request.user,
+            cours=cours
+        ).first()
+
+        result = Resultat.objects.filter(
+            etudiant=request.user,
+            cours=cours
+        ).first()
+
+        data.append({
+            "id": cours.id,
+            "titre": cours.titre,
+            "description": cours.description,
+            "enseignant": cours.enseignant.username,
+            "progress": progress.progression if progress else 0,
+            "score": result.note if result else 0
+        })
+
+    return Response(data)
+
+
+# =====================================================
+# TEACHER COURSES
+# =====================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def teacher_courses(request):
+
+    courses = Cours.objects.filter(
+        enseignant=request.user
+    )
 
     serializer = CourseListSerializer(
         courses,
@@ -155,57 +194,60 @@ def create_course(request):
 
 
 # =====================================================
-# ADD CONTENT
+# UPDATE COURSE
 # =====================================================
 
-@api_view(['POST'])
+@api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 @teacher_required
-def add_content(request, cours_id):
+def update_course(request, id):
 
-    try:
-        cours = Cours.objects.get(id=cours_id)
-
-    except Cours.DoesNotExist:
-
-        return Response(
-            {"error": "Course not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    if cours.enseignant != request.user:
-
-        return Response(
-            {"error": "Not your course"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
-    titre = request.data.get("titre")
-    video_url = request.data.get("video_url")
-    fichier = request.data.get("fichier")
-
-    if not titre:
-
-        return Response(
-            {"error": "Title required"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    contenu = Contenu.objects.create(
-        titre=titre,
-        video_url=video_url,
-        fichier=fichier,
-        cours=cours
+    cours = get_object_or_404(
+        Cours,
+        id=id,
+        enseignant=request.user
     )
 
+    cours.titre = request.data.get(
+        "titre",
+        cours.titre
+    )
+
+    cours.description = request.data.get(
+        "description",
+        cours.description
+    )
+
+    cours.save()
+
     return Response({
-        "message": "Content added",
-        "content_id": contenu.id
+        "message": "Course updated"
     })
 
 
 # =====================================================
-# INSCRIPTION
+# DELETE COURSE
+# =====================================================
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def delete_course(request, id):
+
+    cours = get_object_or_404(
+        Cours,
+        id=id,
+        enseignant=request.user
+    )
+
+    cours.delete()
+
+    return Response({
+        "message": "Course deleted"
+    })
+
+# =====================================================
+# ENROLL COURSE
 # =====================================================
 
 @api_view(['POST'])
@@ -226,15 +268,10 @@ def inscrire(request):
 
     cours_id = serializer.validated_data['cours_id']
 
-    try:
-        cours = Cours.objects.get(id=cours_id)
-
-    except Cours.DoesNotExist:
-
-        return Response(
-            {"error": "Course not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
+    cours = get_object_or_404(
+        Cours,
+        id=cours_id
+    )
 
     inscription, created = Inscription.objects.get_or_create(
         etudiant=request.user,
@@ -242,61 +279,83 @@ def inscrire(request):
     )
 
     return Response({
-        "message": "Inscription successful",
-        "created": created
+        "message": (
+            "Enrollment successful"
+            if created
+            else "Already enrolled"
+        )
     })
 
-
 # =====================================================
-# COURSE DETAIL
+# COURSE DETAIL (STUDENT)
 # =====================================================
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@student_required
 def cours_detail(request, id):
 
-    try:
-        cours = Cours.objects.get(id=id)
+    cours = get_object_or_404(
+        Cours,
+        id=id
+    )
 
-    except Cours.DoesNotExist:
-
-        return Response(
-            {"error": "Course not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    if not Inscription.objects.filter(
+    enrolled = Inscription.objects.filter(
         etudiant=request.user,
         cours=cours
-    ).exists():
+    ).exists()
+
+    if not enrolled:
 
         return Response(
             {"error": "Not enrolled"},
             status=status.HTTP_403_FORBIDDEN
         )
 
-    contenus = Contenu.objects.filter(cours=cours)
+    contenus = Contenu.objects.filter(
+        cours=cours
+    )
 
-    content_data = []
+    contenus_data = []
 
-    for c in contenus:
+    for contenu in contenus:
 
         completed = CompletedContent.objects.filter(
             etudiant=request.user,
-            contenu=c
+            contenu=contenu
         ).exists()
 
-        serialized = ContenuSerializer(c).data
+        contenus_data.append({
+            "id": contenu.id,
+            "titre": contenu.titre,
+            "video_url": contenu.video_url,
+            "fichier": (
+                contenu.fichier.url
+                if contenu.fichier
+                else None
+            ),
+            "completed": completed
+        })
 
-        serialized['completed'] = completed
+    result = Resultat.objects.filter(
+        etudiant=request.user,
+        cours=cours
+    ).first()
 
-        content_data.append(serialized)
+    progress = Progression.objects.filter(
+        etudiant=request.user,
+        cours=cours
+    ).first()
 
-    course_data = CourseDetailSerializer(cours).data
-
-    course_data['contenus'] = content_data
-
-    return Response(course_data)
+    return Response({
+        "id": cours.id,
+        "titre": cours.titre,
+        "description": cours.description,
+        "enseignant": cours.enseignant.username,
+        "progress": progress.progression if progress else 0,
+        "score": result.note if result else 0,
+        "contenus": contenus_data
+    })
 
 
 # =====================================================
@@ -308,78 +367,100 @@ def cours_detail(request, id):
 @teacher_required
 def teacher_course_detail(request, id):
 
-    try:
-        cours = Cours.objects.get(
-            id=id,
-            enseignant=request.user
+    cours = get_object_or_404(
+        Cours,
+        id=id,
+        enseignant=request.user
+    )
+
+    contenus = Contenu.objects.filter(
+        cours=cours
+    )
+
+    students_count = Inscription.objects.filter(
+        cours=cours
+    ).count()
+
+    results = Resultat.objects.filter(
+        cours=cours
+    )
+
+    avg_score = 0
+
+    if results.exists():
+
+        avg_score = round(
+            sum(r.note for r in results) / results.count(),
+            1
         )
 
-    except Cours.DoesNotExist:
+    return Response({
+        "id": cours.id,
+        "titre": cours.titre,
+        "description": cours.description,
+        "students": students_count,
+        "average_score": avg_score,
+        "contenus": ContenuSerializer(
+            contenus,
+            many=True
+        ).data
+    })
+
+
+# =====================================================
+# ADD CONTENT
+# =====================================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def add_content(request, cours_id):
+
+    cours = get_object_or_404(
+        Cours,
+        id=cours_id,
+        enseignant=request.user
+    )
+
+    titre = request.data.get("titre")
+
+    if not titre:
 
         return Response(
-            {"error": "Course not found"},
-            status=status.HTTP_404_NOT_FOUND
+            {"error": "Title required"},
+            status=status.HTTP_400_BAD_REQUEST
         )
 
-    contenus = Contenu.objects.filter(cours=cours)
+    contenu = Contenu.objects.create(
+        titre=titre,
+        video_url=request.data.get("video_url"),
+        fichier=request.data.get("fichier"),
+        cours=cours
+    )
 
-    course_data = CourseDetailSerializer(cours).data
-
-    course_data["contenus"] = ContenuSerializer(
-        contenus,
-        many=True
-    ).data
-
-    return Response(course_data)
+    return Response({
+        "message": "Content added",
+        "content_id": contenu.id
+    })
 
 
 # =====================================================
 # COMPLETE CONTENT
 # =====================================================
 
-@swagger_auto_schema(
-    method='post',
-    request_body=CompleteContentSerializer
-)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @student_required
 def complete_content(request):
 
-    serializer = CompleteContentSerializer(
-        data=request.data
+    contenu_id = request.data.get("contenu_id")
+
+    contenu = get_object_or_404(
+        Contenu,
+        id=contenu_id
     )
 
-    if not serializer.is_valid():
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    contenu_id = serializer.validated_data['contenu_id']
-
-    try:
-        contenu = Contenu.objects.get(id=contenu_id)
-
-    except Contenu.DoesNotExist:
-
-        return Response(
-            {"error": "Content not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    if not Inscription.objects.filter(
-        etudiant=request.user,
-        cours=contenu.cours
-    ).exists():
-
-        return Response(
-            {"error": "Not enrolled"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
-    completed, created = CompletedContent.objects.get_or_create(
+    CompletedContent.objects.get_or_create(
         etudiant=request.user,
         contenu=contenu
     )
@@ -390,7 +471,7 @@ def complete_content(request):
     )
 
     return Response({
-        "message": "Content completed",
+        "message": "Completed",
         "progression": progress
     })
 
@@ -416,7 +497,62 @@ def get_progress(request):
 
 
 # =====================================================
-# CERTIFICAT JSON
+# TEACHER STUDENTS
+# =====================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def teacher_students(request):
+
+    courses = Cours.objects.filter(
+        enseignant=request.user
+    )
+
+    data = []
+
+    for course in courses:
+
+        inscriptions = Inscription.objects.filter(
+            cours=course
+        )
+
+        for inscription in inscriptions:
+
+            student = inscription.etudiant
+
+            progress = Progression.objects.filter(
+                etudiant=student,
+                cours=course
+            ).first()
+
+            result = Resultat.objects.filter(
+                etudiant=student,
+                cours=course
+            ).first()
+
+            score = result.note if result else 0
+
+            gpa = round(score / 25, 2)
+
+            data.append({
+                "student": student.username,
+                "course": course.titre,
+                "progress": progress.progression if progress else 0,
+                "score": score,
+                "gpa": gpa,
+                "status": (
+                    "Passed"
+                    if score >= 10
+                    else "In Progress"
+                )
+            })
+
+    return Response(data)
+
+
+# =====================================================
+# CERTIFICATE JSON
 # =====================================================
 
 @api_view(['GET'])
@@ -455,7 +591,7 @@ def get_certificat(request, cours_id):
 
 
 # =====================================================
-# CERTIFICAT PDF
+# CERTIFICATE PDF
 # =====================================================
 
 @api_view(['GET'])
@@ -488,6 +624,7 @@ def certificat_pdf(request, cours_id):
         styles = getSampleStyleSheet()
 
         content = [
+
             Paragraph(
                 "CERTIFICATE OF ACHIEVEMENT",
                 styles["Title"]
@@ -524,7 +661,7 @@ def certificat_pdf(request, cours_id):
 
 
 # =====================================================
-# SECURE FILE DOWNLOAD
+# DOWNLOAD CONTENT
 # =====================================================
 
 @api_view(['GET'])
@@ -574,88 +711,3 @@ def download_content(request, contenu_id):
         as_attachment=True,
         filename=os.path.basename(file_path)
     )
-
-
-# =====================================================
-# UPDATE COURSE
-# =====================================================
-
-@swagger_auto_schema(
-    method='put',
-    request_body=CreateCourseSerializer
-)
-@api_view(['PUT'])
-@permission_classes([IsAuthenticated])
-@teacher_required
-def update_course(request, id):
-
-    try:
-        cours = Cours.objects.get(id=id)
-
-    except Cours.DoesNotExist:
-
-        return Response(
-            {"error": "Course not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    if cours.enseignant != request.user:
-
-        return Response(
-            {"error": "Not your course"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
-    serializer = CreateCourseSerializer(
-        data=request.data
-    )
-
-    if not serializer.is_valid():
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    cours.titre = serializer.validated_data['titre']
-
-    cours.description = serializer.validated_data['description']
-
-    cours.save()
-
-    return Response({
-        "message": "Course updated"
-    })
-
-
-# =====================================================
-# DELETE COURSE
-# =====================================================
-
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-@teacher_required
-def delete_course(request, id):
-
-    try:
-        cours = Cours.objects.get(id=id)
-
-    except Cours.DoesNotExist:
-
-        return Response(
-            {"error": "Course not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    if cours.enseignant != request.user:
-
-        return Response(
-            {"error": "Not your course"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
-    cours.delete()
-
-    return Response({
-        "message": "Course deleted"
-    })

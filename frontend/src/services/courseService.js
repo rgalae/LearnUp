@@ -1,9 +1,33 @@
 import api from "../api/axios";
 
+// ============================================
+// GET ALL COURSES
+// ============================================
+
 export const getCourses = async () => {
   const token = localStorage.getItem("token");
 
-  const response = await api.get("/cours/", {
+  const config = token
+    ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    : {};
+
+  const response = await api.get("/cours/", config);
+
+  return response.data;
+};
+
+// ============================================
+// GET MY COURSES
+// ============================================
+
+export const getMyCourses = async () => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.get("/cours/my-courses/", {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -11,6 +35,27 @@ export const getCourses = async () => {
 
   return response.data;
 };
+
+// ============================================
+// GET TEACHER COURSES
+// ============================================
+
+export const getTeacherCourses = async () => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.get("/cours/teacher-courses/", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+// ============================================
+// GET COURSE DETAIL
+// ============================================
+
 export const getCourseDetail = async (id) => {
   const token = localStorage.getItem("token");
 
@@ -23,50 +68,9 @@ export const getCourseDetail = async (id) => {
   return response.data;
 };
 
-export const completeContent = async (contenuId) => {
-  const token = localStorage.getItem("token");
-
-  const response = await api.post(
-    "/cours/complete/",
-    {
-      contenu_id: contenuId,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-
-  return response.data;
-};
-
-export const createCourse = async (courseData) => {
-  const token = localStorage.getItem("token");
-
-  const response = await api.post("/cours/create/", courseData, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  return response.data;
-};
-export const createContent = async (coursId, contentData) => {
-  const token = localStorage.getItem("token");
-
-  const response = await api.post(
-    `/cours/${coursId}/add-content/`,
-    contentData,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-
-  return response.data;
-};
+// ============================================
+// GET TEACHER COURSE DETAIL
+// ============================================
 
 export const getTeacherCourseDetail = async (id) => {
   const token = localStorage.getItem("token");
@@ -79,6 +83,57 @@ export const getTeacherCourseDetail = async (id) => {
 
   return response.data;
 };
+// ============================================
+// CREATE COURSE
+// ============================================
+
+export const createCourse = async (courseData) => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.post("/cours/create/", courseData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+// ============================================
+// UPDATE COURSE
+// ============================================
+
+export const updateCourse = async (id, courseData) => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.put(`/cours/${id}/update/`, courseData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+// ============================================
+// DELETE COURSE
+// ============================================
+
+export const deleteCourse = async (id) => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.delete(`/cours/${id}/delete/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+// ============================================
+// ENROLL COURSE
+// ============================================
 
 export const enrollCourse = async (coursId) => {
   const token = localStorage.getItem("token");
@@ -98,12 +153,103 @@ export const enrollCourse = async (coursId) => {
   return response.data;
 };
 
+// ============================================
+// COMPLETE CONTENT
+// ============================================
+
+export const completeContent = async (contenuId) => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.post(
+    "/cours/complete/",
+    {
+      contenu_id: contenuId,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  return response.data;
+};
+
+// ============================================
+// GET PROGRESS
+// ============================================
+
 export const getProgress = async () => {
   const token = localStorage.getItem("token");
 
   const response = await api.get("/cours/progress/", {
     headers: {
       Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+// ============================================
+// TEACHER RESULTS
+// ============================================
+
+export const getTeacherResults = async () => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.get("/results/teacher-results/", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+// ============================================
+// STUDENT RESULTS
+// ============================================
+
+export const getStudentResults = async () => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.get("/results/student-results/", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+// ============================================
+// STUDENT DASHBOARD
+// ============================================
+
+export const getStudentDashboard = async () => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.get("/results/student-dashboard/", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+// ============================================
+// CREATE CONTENT
+// ============================================
+
+export const createContent = async (coursId, formData) => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.post(`/cours/${coursId}/add-content/`, formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
     },
   });
 

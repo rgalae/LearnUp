@@ -23,3 +23,15 @@ export const submitQuiz = async (quizData) => {
 
   return response.data;
 };
+
+export const createQuiz = async (quizData) => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.post("/quiz/create/", quizData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};

@@ -40,6 +40,40 @@ function StudentResults() {
     return <p>Loading...</p>;
   }
 
+  const downloadCertificate = async (coursId) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.get(
+        `http://127.0.0.1:8000/cours/certificat/${coursId}/pdf/`,
+        {
+          responseType: "blob",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+
+      const link = document.createElement("a");
+
+      link.href = url;
+
+      link.setAttribute("download", `certificate_${coursId}.pdf`);
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      link.remove();
+    } catch (error) {
+      console.error(error);
+
+      alert("Failed to download certificate");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -88,10 +122,21 @@ function StudentResults() {
                   <p className="text-gray-400">Grade: {result.grade}</p>
                 </div>
 
-                <div className="text-right">
-                  <p className="text-2xl font-bold">{result.note}%</p>
+                <div className="text-right space-y-3">
+                  <div>
+                    <p className="text-2xl font-bold">{result.note}%</p>
 
-                  <p className="text-gray-400">GPA: {result.gpa}</p>
+                    <p className="text-gray-400">GPA: {result.gpa}</p>
+                  </div>
+
+                  {result.note >= 10 && (
+                    <button
+                      onClick={() => downloadCertificate(result.cours_id)}
+                      className="bg-indigo-600 hover:bg-indigo-500 transition px-4 py-2 rounded-xl text-sm"
+                    >
+                      Download Certificate
+                    </button>
+                  )}
                 </div>
               </div>
             ))

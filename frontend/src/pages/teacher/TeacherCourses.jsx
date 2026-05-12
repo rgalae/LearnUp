@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { Link } from "react-router-dom";
 
-import { getCourses } from "../../services/courseService";
+import { getTeacherCourses, deleteCourse } from "../../services/courseService";
 
 function TeacherCourses() {
   const [courses, setCourses] = useState([]);
@@ -17,7 +17,7 @@ function TeacherCourses() {
 
   const fetchCourses = async () => {
     try {
-      const data = await getCourses();
+      const data = await getTeacherCourses();
 
       setCourses(data);
     } catch (err) {
@@ -26,6 +26,26 @@ function TeacherCourses() {
       setError("Failed to load courses");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (courseId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this course?",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteCourse(courseId);
+
+      setCourses((prev) => prev.filter((course) => course.id !== courseId));
+
+      alert("Course deleted successfully");
+    } catch (err) {
+      console.log(err);
+
+      alert("Failed to delete course");
     }
   };
 
@@ -58,19 +78,38 @@ function TeacherCourses() {
 
       <div className="grid gap-5">
         {courses.map((course) => (
-          <Link
-            to={`/teacher/courses/${course.id}`}
+          <div
             key={course.id}
-            className="bg-[#0d1526] border border-white/10 rounded-2xl p-6 block hover:border-indigo-500/30 transition"
+            className="bg-[#0d1526] border border-white/10 rounded-2xl p-6 hover:border-indigo-500/30 transition"
           >
-            <h2 className="text-xl font-semibold text-white">{course.titre}</h2>
+            <Link to={`/teacher/courses/${course.id}`} className="block">
+              <h2 className="text-xl font-semibold text-white">
+                {course.titre}
+              </h2>
 
-            <p className="text-slate-400 mt-3">{course.description}</p>
+              <p className="text-slate-400 mt-3">{course.description}</p>
 
-            <p className="text-indigo-400 text-sm mt-4">
-              Teacher: {course.enseignant}
-            </p>
-          </Link>
+              <p className="text-indigo-400 text-sm mt-4">
+                Teacher: {course.enseignant}
+              </p>
+            </Link>
+
+            <div className="flex gap-3 mt-6">
+              <Link
+                to={`/teacher/courses/${course.id}`}
+                className="bg-indigo-600 hover:bg-indigo-500 transition px-4 py-2 rounded-xl text-white text-sm"
+              >
+                Manage
+              </Link>
+
+              <button
+                onClick={() => handleDelete(course.id)}
+                className="bg-red-600 hover:bg-red-500 transition px-4 py-2 rounded-xl text-white text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         ))}
       </div>
     </div>

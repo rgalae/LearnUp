@@ -1,25 +1,67 @@
 from django.urls import path
 
 from .views import (
-    get_results,
-    get_cgpa,
-    generate_pdf
+    login_view,
+    refresh_token_view,
+    logout_view,
+    register_view,
+    teacher_dashboard,
+    teacher_results,
+    student_dashboard,
+    student_results
 )
 
 urlpatterns = [
 
+    # =====================================================
+    # AUTH
+    # =====================================================
+
     path(
-        '',
-        get_results
+        'register/',
+        register_view
     ),
 
     path(
-        'cgpa/',
-        get_cgpa
+        'login/',
+        login_view
     ),
 
     path(
-        'pdf/',
-        generate_pdf
+        'refresh/',
+        refresh_token_view
+    ),
+
+    path(
+        'logout/',
+        logout_view
+    ),
+
+    # =====================================================
+    # STUDENT
+    # =====================================================
+
+    path(
+        'student-dashboard/',
+        student_dashboard
+    ),
+
+    path(
+        'student-results/',
+        student_results
+    ),
+
+    # =====================================================
+    # TEACHER
+    # =====================================================
+
+    path(
+        'teacher-dashboard/',
+        teacher_dashboard
+    ),
+
+    path(
+        'teacher-results/',
+        teacher_results
     ),
 ]

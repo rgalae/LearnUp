@@ -30,7 +30,8 @@ from .serializers import (
 from results.models import Resultat
 
 from courses.models import (
-    Inscription
+    Inscription,
+    Cours
 )
 
 from courses.views import (
@@ -205,9 +206,28 @@ def create_quiz(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    try:
+        cours = Cours.objects.get(
+            id=serializer.validated_data['cours_id']
+        )
+
+    except Cours.DoesNotExist:
+
+        return Response(
+            {"error": "Course not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if cours.enseignant != request.user:
+
+        return Response(
+            {"error": "Not your course"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
     quiz = Quiz.objects.create(
         titre=serializer.validated_data['titre'],
-        cours_id=serializer.validated_data['cours_id']
+        cours=cours
     )
 
     return Response({
@@ -240,8 +260,27 @@ def create_question(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    try:
+        quiz = Quiz.objects.get(
+            id=serializer.validated_data['quiz_id']
+        )
+
+    except Quiz.DoesNotExist:
+
+        return Response(
+            {"error": "Quiz not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if quiz.cours.enseignant != request.user:
+
+        return Response(
+            {"error": "Not your quiz"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
     question = Question.objects.create(
-        quiz_id=serializer.validated_data['quiz_id'],
+        quiz=quiz,
         texte=serializer.validated_data['texte'],
         type_question=serializer.validated_data['type_question']
     )
@@ -276,8 +315,27 @@ def create_response(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    try:
+        question = Question.objects.get(
+            id=serializer.validated_data['question_id']
+        )
+
+    except Question.DoesNotExist:
+
+        return Response(
+            {"error": "Question not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if question.quiz.cours.enseignant != request.user:
+
+        return Response(
+            {"error": "Not your question"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
     response_obj = Reponse.objects.create(
-        question_id=serializer.validated_data['question_id'],
+        question=question,
         texte=serializer.validated_data['texte'],
         est_correcte=serializer.validated_data['est_correcte']
     )

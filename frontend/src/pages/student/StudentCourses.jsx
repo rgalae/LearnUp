@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 
 import ProgressBar from "../../components/ui/ProgressBar";
 
-import {
-  getCourses,
-  enrollCourse,
-  getProgress,
-} from "../../services/courseService";
+import { getMyCourses, getProgress } from "../../services/courseService";
 
 function StudentCourses() {
   const [courses, setCourses] = useState([]);
@@ -25,7 +21,7 @@ function StudentCourses() {
 
   const fetchData = async () => {
     try {
-      const coursesData = await getCourses();
+      const coursesData = await getMyCourses();
 
       const progressData = await getProgress();
 
@@ -96,13 +92,6 @@ function StudentCourses() {
             </p>
 
             <div className="mt-5 flex gap-3">
-              <button
-                onClick={() => handleEnroll(course.id)}
-                className="bg-indigo-600 hover:bg-indigo-500 transition px-4 py-2 rounded-xl text-white text-sm"
-              >
-                Enroll
-              </button>
-
               <Link
                 to={`/student/courses/${course.id}`}
                 className="border border-white/10 px-4 py-2 rounded-xl text-white text-sm"

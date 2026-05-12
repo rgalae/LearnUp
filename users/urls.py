@@ -4,7 +4,8 @@ from .views import (
     login_view,
     refresh_token_view,
     logout_view,
-    register_view
+    register_view,
+    teacher_dashboard
 )
 
 urlpatterns = [
@@ -16,4 +17,6 @@ urlpatterns = [
     path('refresh/', refresh_token_view),
 
     path('logout/', logout_view),
+
+    path('teacher-dashboard/', teacher_dashboard),
 ]

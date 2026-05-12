@@ -28,7 +28,8 @@ urlpatterns = [
     path('cours/', include('courses.urls')),
     path('quiz/', include('quiz.urls')),
     path('users/', include('users.urls')),
-
+    path('results/', include('results.urls')),
+    
     # swagger
     path(
         'swagger/',
