@@ -147,69 +147,6 @@ def logout_view(request):
     })
 
 
-# =====================================================
-# STUDENT DASHBOARD
-# =====================================================
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def student_dashboard(request):
-
-    if request.user.role != "student":
-
-        return Response(
-            {"error": "Student only"},
-            status=403
-        )
-
-    inscriptions = Inscription.objects.filter(
-        etudiant=request.user
-    )
-
-    total_courses = inscriptions.count()
-
-    completed_courses = 0
-
-    total_progress = 0
-
-    for inscription in inscriptions:
-
-        total_content = Contenu.objects.filter(
-            cours=inscription.cours
-        ).count()
-
-        completed_content = CompletedContent.objects.filter(
-            etudiant=request.user,
-            contenu__cours=inscription.cours
-        ).count()
-
-        progress = 0
-
-        if total_content > 0:
-            progress = int(
-                (completed_content / total_content) * 100
-            )
-
-        total_progress += progress
-
-        if progress == 100:
-            completed_courses += 1
-
-    average_progress = 0
-
-    if total_courses > 0:
-        average_progress = int(
-            total_progress / total_courses
-        )
-
-    return Response({
-
-        "total_courses": total_courses,
-
-        "completed_courses": completed_courses,
-
-        "average_progress": average_progress
-    })
 
 
 # =====================================================

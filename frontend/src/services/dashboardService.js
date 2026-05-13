@@ -7,7 +7,7 @@ import api from "../api/axios";
 export const getStudentDashboardData = async () => {
   const token = localStorage.getItem("token");
 
-  const response = await api.get("/results/student-dashboard/", {
+  const response = await api.get("/users/student-dashboard/", {
     headers: {
       Authorization: `Bearer ${token}`,
     },

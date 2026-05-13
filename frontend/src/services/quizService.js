@@ -35,3 +35,27 @@ export const createQuiz = async (quizData) => {
 
   return response.data;
 };
+
+export const createQuestion = async (questionData) => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.post("/quiz/question/create/", questionData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+export const createResponse = async (responseData) => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.post("/quiz/reponse/create/", responseData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};

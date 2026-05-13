@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 
 import Button from "../../components/ui/Button";
 
-import { getQuiz, submitQuiz } from "../../services/quizServices.js";
+import { getQuiz, submitQuiz } from "../../services/quizService.js";
 
 function QuizPage() {
   const { coursId } = useParams();
@@ -83,22 +83,39 @@ function QuizPage() {
       </div>
 
       {score !== null && (
-        <div className="bg-green-600/20 border border-green-500 text-green-300 p-6 rounded-2xl space-y-4">
-          <h2 className="text-2xl font-bold">Quiz Completed 🎉</h2>
+        <div
+          className={`p-6 rounded-2xl space-y-4 border ${
+            score >= 80
+              ? "bg-green-600/20 border-green-500 text-green-300"
+              : "bg-red-600/20 border-red-500 text-red-300"
+          }`}
+        >
+          <h2 className="text-2xl font-bold">
+            {score >= 80 ? "Quiz Passed 🎉" : "Quiz Failed ❌"}
+          </h2>
 
           <p className="text-lg">Your score: {score}%</p>
 
-          <div className="flex gap-4 pt-2">
-            <Button onClick={() => navigate("/student/results")}>
-              View Results
-            </Button>
+          <p>
+            {score >= 80
+              ? "Excellent work! You passed the quiz."
+              : "You need at least 80% to pass this quiz."}
+          </p>
 
-            <Button
-              variant="ghost"
+          <div className="flex gap-4 pt-2">
+            <button
+              onClick={() => navigate("/student/results")}
+              className="bg-indigo-600 hover:bg-indigo-500 transition px-5 py-3 rounded-xl text-white"
+            >
+              View Results
+            </button>
+
+            <button
               onClick={() => navigate("/student/courses")}
+              className="bg-white/10 hover:bg-white/20 transition px-5 py-3 rounded-xl text-white"
             >
               Back to Courses
-            </Button>
+            </button>
           </div>
         </div>
       )}
@@ -121,6 +138,7 @@ function QuizPage() {
                 >
                   <input
                     type="radio"
+                    disabled={score !== null}
                     name={`question-${question.question_id}`}
                     onChange={() =>
                       handleSelect(question.question_id, reponse.id)
@@ -137,6 +155,7 @@ function QuizPage() {
 
       <Button
         className="w-full"
+        disabled={score !== null}
         onClick={handleSubmit}
         disabled={score !== null}
       >

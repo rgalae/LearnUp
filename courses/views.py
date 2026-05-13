@@ -33,6 +33,8 @@ from .serializers import (
 
 from results.models import Resultat
 
+from quiz.models import Quiz
+
 from reportlab.platypus import (
     SimpleDocTemplate,
     Paragraph,
@@ -246,6 +248,7 @@ def delete_course(request, id):
         "message": "Course deleted"
     })
 
+
 # =====================================================
 # ENROLL COURSE
 # =====================================================
@@ -286,6 +289,35 @@ def inscrire(request):
         )
     })
 
+
+# =====================================================
+# UNENROLL COURSE
+# =====================================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@student_required
+def desinscrire(request):
+
+    cours_id = request.data.get("cours_id")
+
+    inscription = Inscription.objects.filter(
+        etudiant=request.user,
+        cours_id=cours_id
+    ).first()
+
+    if not inscription:
+
+        return Response(
+            {"error": "Not enrolled"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    inscription.delete()
+
+    return Response({
+        "message": "Unenrolled successfully"
+    })
 # =====================================================
 # COURSE DETAIL (STUDENT)
 # =====================================================
@@ -347,6 +379,10 @@ def cours_detail(request, id):
         cours=cours
     ).first()
 
+    quiz_exists = Quiz.objects.filter(
+        cours=cours
+    ).exists()
+
     return Response({
         "id": cours.id,
         "titre": cours.titre,
@@ -354,6 +390,7 @@ def cours_detail(request, id):
         "enseignant": cours.enseignant.username,
         "progress": progress.progression if progress else 0,
         "score": result.note if result else 0,
+        "quiz_exists": quiz_exists,
         "contenus": contenus_data
     })
 
@@ -495,7 +532,6 @@ def get_progress(request):
 
     return Response(serializer.data)
 
-
 # =====================================================
 # TEACHER STUDENTS
 # =====================================================
@@ -550,6 +586,58 @@ def teacher_students(request):
 
     return Response(data)
 
+# =====================================================
+# DOWNLOAD CONTENT
+# =====================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def download_content(request, contenu_id):
+
+    contenu = get_object_or_404(
+        Contenu,
+        id=contenu_id
+    )
+
+    if not contenu.fichier:
+
+        return Response(
+            {"error": "No file attached"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    is_teacher_owner = (
+        request.user.role == "teacher"
+        and contenu.cours.enseignant == request.user
+    )
+
+    is_enrolled_student = Inscription.objects.filter(
+        etudiant=request.user,
+        cours=contenu.cours
+    ).exists()
+
+    if not (is_teacher_owner or is_enrolled_student):
+
+        return Response(
+            {"error": "Access denied"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    file_path = contenu.fichier.path
+
+    if not os.path.exists(file_path):
+
+        return Response(
+            {"error": "File not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    return FileResponse(
+        open(file_path, 'rb'),
+        as_attachment=True,
+        filename=os.path.basename(file_path)
+    )
+
 
 # =====================================================
 # CERTIFICATE JSON
@@ -565,7 +653,7 @@ def get_certificat(request, cours_id):
             cours_id=cours_id
         )
 
-        if result.note < 10:
+        if result.note < 80:
 
             return Response(
                 {"error": "Insufficient grade"},
@@ -604,7 +692,7 @@ def certificat_pdf(request, cours_id):
             cours_id=cours_id
         )
 
-        if result.note < 10:
+        if result.note < 80:
 
             return Response(
                 {"error": "Insufficient grade"},
@@ -658,56 +746,3 @@ def certificat_pdf(request, cours_id):
             {"error": "No result found"},
             status=status.HTTP_404_NOT_FOUND
         )
-
-
-# =====================================================
-# DOWNLOAD CONTENT
-# =====================================================
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def download_content(request, contenu_id):
-
-    contenu = get_object_or_404(
-        Contenu,
-        id=contenu_id
-    )
-
-    if not contenu.fichier:
-
-        return Response(
-            {"error": "No file attached"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    is_teacher_owner = (
-        request.user.role == "teacher"
-        and contenu.cours.enseignant == request.user
-    )
-
-    is_enrolled_student = Inscription.objects.filter(
-        etudiant=request.user,
-        cours=contenu.cours
-    ).exists()
-
-    if not (is_teacher_owner or is_enrolled_student):
-
-        return Response(
-            {"error": "Access denied"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
-    file_path = contenu.fichier.path
-
-    if not os.path.exists(file_path):
-
-        return Response(
-            {"error": "File not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    return FileResponse(
-        open(file_path, 'rb'),
-        as_attachment=True,
-        filename=os.path.basename(file_path)
-    )

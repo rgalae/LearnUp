@@ -5,18 +5,63 @@ from .views import (
     refresh_token_view,
     logout_view,
     register_view,
-    teacher_dashboard
+    teacher_dashboard,
+    teacher_results,
+    student_dashboard,
+    student_results
 )
 
 urlpatterns = [
 
-    path('register/', register_view),
+    # =====================================================
+    # AUTH
+    # =====================================================
 
-    path('login/', login_view),
+    path(
+        'register/',
+        register_view
+    ),
 
-    path('refresh/', refresh_token_view),
+    path(
+        'login/',
+        login_view
+    ),
 
-    path('logout/', logout_view),
+    path(
+        'refresh/',
+        refresh_token_view
+    ),
 
-    path('teacher-dashboard/', teacher_dashboard),
+    path(
+        'logout/',
+        logout_view
+    ),
+
+    # =====================================================
+    # STUDENT
+    # =====================================================
+
+    path(
+        'student-dashboard/',
+        student_dashboard
+    ),
+
+    path(
+        'student-results/',
+        student_results
+    ),
+
+    # =====================================================
+    # TEACHER
+    # =====================================================
+
+    path(
+        'teacher-dashboard/',
+        teacher_dashboard
+    ),
+
+    path(
+        'teacher-results/',
+        teacher_results
+    ),
 ]

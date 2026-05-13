@@ -52,22 +52,40 @@ logger = logging.getLogger(__name__)
 @permission_classes([IsAuthenticated])
 def get_quiz(request, cours_id):
 
-    if not Inscription.objects.filter(
-        etudiant=request.user,
-        cours_id=cours_id
-    ).exists():
+    if request.user.role == "teacher":
 
-        return Response(
-            {"error": "Not enrolled"},
-            status=status.HTTP_403_FORBIDDEN
-        )
+        try:
+            Cours.objects.get(
+                id=cours_id,
+                enseignant=request.user
+            )
 
-    try:
-        quiz = Quiz.objects.get(
+        except Cours.DoesNotExist:
+
+            return Response(
+                {"error": "Not your course"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+    else:
+
+        enrolled = Inscription.objects.filter(
+            etudiant=request.user,
             cours_id=cours_id
-        )
+        ).exists()
 
-    except Quiz.DoesNotExist:
+        if not enrolled:
+
+            return Response(
+                {"error": "Not enrolled"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+    quiz = Quiz.objects.filter(
+        cours_id=cours_id
+    ).first()
+
+    if not quiz:
 
         return Response(
             {"error": "Quiz not found"},
@@ -119,60 +137,78 @@ def submit_quiz(request):
 
     score = 0
 
+    total_questions = len(answers)
+
     for ans in answers:
 
         try:
 
-            reponse = Reponse.objects.get(
-                id=ans['reponse_id'],
-                question_id=ans['question_id']
+            question = Question.objects.get(
+                id=ans['question_id']
             )
 
-            if reponse.est_correcte:
-                score += 1
+            # =====================================
+            # MULTIPLE CHOICE
+            # =====================================
 
-        except Reponse.DoesNotExist:
+            if question.type_question == "choix":
+
+                reponse = Reponse.objects.get(
+                    id=ans['reponse_id'],
+                    question=question
+                )
+
+                if reponse.est_correcte:
+                    score += 1
+
+            # =====================================
+            # OPEN QUESTION
+            # =====================================
+
+            elif question.type_question == "ouverte":
+
+                student_answer = ans.get(
+                    "texte_reponse",
+                    ""
+                ).strip().lower()
+
+                correct_answer = (
+                    question.correct_answer or ""
+                ).strip().lower()
+
+                if student_answer == correct_answer:
+                    score += 1
+
+        except Exception as e:
+            print(e)
             continue
 
-    total = len(answers)
-
     final_score = int(
-        (score / total) * 100
-    ) if total > 0 else 0
+        (score / total_questions) * 100
+    ) if total_questions > 0 else 0
 
-    try:
+    Tentative.objects.create(
+        etudiant=request.user,
+        quiz=quiz,
+        score=final_score,
+        date_fin=timezone.now()
+    )
 
-        Tentative.objects.create(
-            etudiant=request.user,
-            quiz=quiz,
-            score=final_score,
-            date_fin=timezone.now()
-        )
+    # =====================================================
+    # SAVE RESULT FOR RESULTS PAGE
+    # =====================================================
 
-        Resultat.objects.update_or_create(
-            etudiant=request.user,
-            cours=quiz.cours,
-            defaults={
-                "note": final_score
-            }
-        )
+    Resultat.objects.update_or_create(
+        etudiant=request.user,
+        cours=quiz.cours,
+        defaults={
+            "note": final_score
+        }
+    )
 
-        progress = update_course_progress(
-            request.user,
-            quiz.cours
-        )
-
-    except Exception as e:
-
-        print(e)
-
-        return Response(
-            {"error": str(e)},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    logger.info(
-        f"{request.user} submitted quiz {quiz.id} with score {final_score}"
+    progress = update_course_progress(
+        request.user,
+        quiz.cours
     )
 
     return Response({
@@ -282,7 +318,11 @@ def create_question(request):
     question = Question.objects.create(
         quiz=quiz,
         texte=serializer.validated_data['texte'],
-        type_question=serializer.validated_data['type_question']
+        type_question=serializer.validated_data['type_question'],
+        correct_answer=serializer.validated_data.get(
+            'correct_answer',
+            ""
+        )
     )
 
     return Response({

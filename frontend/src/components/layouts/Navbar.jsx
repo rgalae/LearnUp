@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../../auth/AuthContext";
 
@@ -15,9 +15,8 @@ const routeLabels = {
 
 function Navbar() {
   const location = useLocation();
-  const navigate = useNavigate();
 
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
 
   const pageLabel = routeLabels[location.pathname] || "Dashboard";
 
@@ -26,11 +25,6 @@ function Navbar() {
   const roleLabel = role === "teacher" ? "Teacher" : "Student";
 
   const userName = user?.username || "User";
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   return (
     <header className="h-16 border-b border-white/[0.06] bg-[#080e1c]/80 backdrop-blur-xl flex items-center justify-between px-6 sticky top-0 z-30">
@@ -90,13 +84,6 @@ function Navbar() {
             </p>
           </div>
         </div>
-
-        <button
-          onClick={handleLogout}
-          className="ml-3 text-sm text-slate-400 hover:text-red-400 transition-colors"
-        >
-          Logout
-        </button>
       </div>
     </header>
   );

@@ -13,11 +13,16 @@ function StudentResults() {
     try {
       const token = localStorage.getItem("token");
 
-      const response = await axios.get("http://127.0.0.1:8000/results/", {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await axios.get(
+        "http://127.0.0.1:8000/users/student-results/",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
+
+      console.log(response.data);
 
       setResults(response.data);
     } catch (error) {

@@ -5,9 +5,7 @@ from .views import (
     refresh_token_view,
     logout_view,
     register_view,
-    teacher_dashboard,
     teacher_results,
-    student_dashboard,
     student_results
 )
 
@@ -41,10 +39,7 @@ urlpatterns = [
     # STUDENT
     # =====================================================
 
-    path(
-        'student-dashboard/',
-        student_dashboard
-    ),
+
 
     path(
         'student-results/',
@@ -54,11 +49,6 @@ urlpatterns = [
     # =====================================================
     # TEACHER
     # =====================================================
-
-    path(
-        'teacher-dashboard/',
-        teacher_dashboard
-    ),
 
     path(
         'teacher-results/',

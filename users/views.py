@@ -273,3 +273,130 @@ def teacher_dashboard(request):
         "avg_score": avg_score,
         "courses": courses_data
     })
+
+# =====================================================
+# STUDENT RESULTS
+# =====================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def student_results(request):
+
+    from results.models import Resultat
+
+    results = Resultat.objects.filter(
+        etudiant=request.user
+    )
+
+    data = []
+
+    for result in results:
+
+        data.append({
+            "cours": result.cours.titre,
+            "cours_id": result.cours.id,
+            "note": result.note,
+            "grade": (
+                "Excellent"
+                if result.note >= 90 else
+                "Very Good"
+                if result.note >= 80 else
+                "Good"
+                if result.note >= 70 else
+                "Average"
+                if result.note >= 50 else
+                "Failed"
+            ),
+            "gpa": round(result.note / 20, 2)
+        })
+
+    return Response(data)
+
+
+# =====================================================
+# TEACHER RESULTS
+# =====================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def teacher_results(request):
+
+    from results.models import Resultat
+    from courses.models import Cours
+
+    teacher_courses = Cours.objects.filter(
+        enseignant=request.user
+    )
+
+    results = Resultat.objects.filter(
+        cours__in=teacher_courses
+    )
+
+    data = []
+
+    for result in results:
+
+        data.append({
+            "student": result.etudiant.username,
+            "cours": result.cours.titre,
+            "note": result.note
+        })
+
+    return Response(data)
+
+
+# =====================================================
+# STUDENT DASHBOARD
+# =====================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def student_dashboard(request):
+
+    from courses.models import (
+        Inscription,
+        Progression
+    )
+
+    from results.models import Resultat
+
+    total_courses = Inscription.objects.filter(
+        etudiant=request.user
+    ).count()
+
+    results = Resultat.objects.filter(
+        etudiant=request.user
+    )
+
+    completed_courses = results.filter(
+        note__gte=80
+    ).count()
+
+    average_progress = 0
+
+    if results.exists():
+
+        average_progress = round(
+            sum(r.note for r in results) / results.count(),
+            1
+        )
+
+    progressions = Progression.objects.filter(
+        etudiant=request.user
+    )
+
+    courses_data = []
+
+    for progression in progressions:
+
+        courses_data.append({
+            "titre": progression.cours.titre,
+            "progression": progression.progression
+        })
+
+    return Response({
+    "total_courses": total_courses,
+    "completed_courses": completed_courses,
+    "average_progress": average_progress,
+    "courses": courses_data
+})

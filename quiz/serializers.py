@@ -97,8 +97,14 @@ class SubmitAnswerSerializer(serializers.Serializer):
 
     question_id = serializers.IntegerField()
 
-    reponse_id = serializers.IntegerField()
+    reponse_id = serializers.IntegerField(
+        required=False
+    )
 
+    texte_reponse = serializers.CharField(
+        required=False,
+        allow_blank=True
+    )
 
 # =====================================================
 # SUBMIT QUIZ SERIALIZER
@@ -138,6 +144,10 @@ class CreateQuestionSerializer(serializers.Serializer):
 
     type_question = serializers.CharField()
 
+    correct_answer = serializers.CharField(
+        required=False,
+        allow_blank=True
+    )
 
 # =====================================================
 # CREATE RESPONSE SERIALIZER

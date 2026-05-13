@@ -27,8 +27,21 @@ class Question(models.Model):
     ]
 
     texte = models.TextField()
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
-    type_question = models.CharField(max_length=20, choices=TYPE_CHOICES)
+
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE
+    )
+
+    type_question = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES
+    )
+
+    correct_answer = models.TextField(
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         return self.texte
@@ -36,7 +49,6 @@ class Question(models.Model):
     class Meta:
         verbose_name = "Question"
         verbose_name_plural = "Questions"
-
 
 class Reponse(models.Model):
     texte = models.CharField(max_length=255)

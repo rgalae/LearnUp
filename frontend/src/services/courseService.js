@@ -154,6 +154,27 @@ export const enrollCourse = async (coursId) => {
 };
 
 // ============================================
+// UNENROLL COURSE
+// ============================================
+
+export const unenrollCourse = async (coursId) => {
+  const token = localStorage.getItem("token");
+
+  const response = await api.post(
+    "/cours/desinscription/",
+    {
+      cours_id: coursId,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  return response.data;
+};
+// ============================================
 // COMPLETE CONTENT
 // ============================================
 
