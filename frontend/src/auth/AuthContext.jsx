@@ -17,6 +17,8 @@ function AuthProvider({ children }) {
           token,
           role: decoded.role,
           username: decoded.username,
+          email: decoded.email,
+          profile_picture: decoded.profile_picture || null,
         });
       } catch (error) {
         localStorage.removeItem("token");
@@ -33,6 +35,8 @@ function AuthProvider({ children }) {
       token,
       role: decoded.role,
       username: decoded.username,
+      email: decoded.email,
+      profile_picture: decoded.profile_picture || null,
     });
   };
 

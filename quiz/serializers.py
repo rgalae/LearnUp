@@ -125,7 +125,7 @@ class SubmitQuizSerializer(serializers.Serializer):
 
 class CreateQuizSerializer(serializers.Serializer):
 
-    cours_id = serializers.IntegerField()
+    module_id = serializers.IntegerField()
 
     titre = serializers.CharField(
         max_length=255

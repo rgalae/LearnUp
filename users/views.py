@@ -400,3 +400,69 @@ def student_dashboard(request):
     "average_progress": average_progress,
     "courses": courses_data
 })
+
+# =====================================================
+# NOTIFICATIONS
+# =====================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_notifications(request):
+    from .models import Notification
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    
+    data = []
+    for notif in notifications:
+        data.append({
+            "id": notif.id,
+            "message": notif.message,
+            "is_read": notif.is_read,
+            "created_at": notif.created_at
+        })
+    
+    return Response(data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_notification_read(request, id):
+    from .models import Notification
+    try:
+        notif = Notification.objects.get(id=id, user=request.user)
+        notif.is_read = True
+        notif.save()
+        return Response({"message": "Marked as read"})
+    except Notification.DoesNotExist:
+        return Response({"error": "Notification not found"}, status=404)
+
+# =====================================================
+# UPDATE PROFILE
+# =====================================================
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    user = request.user
+    
+    if 'profile_picture' in request.FILES:
+        user.profile_picture = request.FILES['profile_picture']
+        
+    if 'username' in request.data:
+        # verify username is unique
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        new_username = request.data['username']
+        if User.objects.filter(username=new_username).exclude(id=user.id).exists():
+            return Response({"error": "Username already exists"}, status=400)
+        user.username = new_username
+        
+    if 'email' in request.data:
+        user.email = request.data['email']
+        
+    user.save()
+    
+    return Response({
+        "message": "Profile updated successfully",
+        "username": user.username,
+        "email": user.email,
+        "profile_picture": user.profile_picture.url if user.profile_picture else None
+    })

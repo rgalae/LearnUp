@@ -1,13 +1,14 @@
 from django.db import models
 from django.conf import settings
-from courses.models import Cours
+from courses.models import Module
 
 User = settings.AUTH_USER_MODEL
 
 
 class Quiz(models.Model):
     titre = models.CharField(max_length=255)
-    cours = models.ForeignKey(Cours, on_delete=models.CASCADE)
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='quizzes')
+    order = models.IntegerField(default=0)
 
     def __str__(self):
         return self.titre
@@ -15,6 +16,7 @@ class Quiz(models.Model):
     class Meta:
         verbose_name = "Quiz"
         verbose_name_plural = "Quiz"
+        ordering = ['order', 'id']
 
 
 class Question(models.Model):

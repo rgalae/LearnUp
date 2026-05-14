@@ -56,13 +56,32 @@ class Inscription(models.Model):
 
 
 # ---------------------------
+# MODULE
+# ---------------------------
+class Module(models.Model):
+    titre = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    cours = models.ForeignKey(Cours, on_delete=models.CASCADE, related_name='modules')
+    order = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.cours.titre} - {self.titre}"
+
+    class Meta:
+        verbose_name = "Module"
+        verbose_name_plural = "Modules"
+        ordering = ['order', 'id']
+
+
+# ---------------------------
 # CONTENU
 # ---------------------------
 class Contenu(models.Model):
     titre = models.CharField(max_length=255)
     fichier = models.FileField(upload_to='contenus/', null=True, blank=True)
     video_url = models.URLField(null=True, blank=True)
-    cours = models.ForeignKey(Cours, on_delete=models.CASCADE, related_name='contenus')
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='contenus')
+    order = models.IntegerField(default=0)
     date_upload = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -71,6 +90,7 @@ class Contenu(models.Model):
     class Meta:
         verbose_name = "Contenu"
         verbose_name_plural = "Contenus"
+        ordering = ['order', 'id']
 
 
 

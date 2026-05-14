@@ -100,6 +100,34 @@ export const createCourse = async (courseData) => {
 };
 
 // ============================================
+// MODULES
+// ============================================
+
+export const createModule = async (moduleData) => {
+  const token = localStorage.getItem("token");
+  const response = await api.post("/cours/modules/create/", moduleData, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+export const updateModule = async (id, moduleData) => {
+  const token = localStorage.getItem("token");
+  const response = await api.put(`/cours/modules/${id}/update/`, moduleData, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+export const deleteModule = async (id) => {
+  const token = localStorage.getItem("token");
+  const response = await api.delete(`/cours/modules/${id}/delete/`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+// ============================================
 // UPDATE COURSE
 // ============================================
 
@@ -264,10 +292,10 @@ export const getStudentDashboard = async () => {
 // CREATE CONTENT
 // ============================================
 
-export const createContent = async (coursId, formData) => {
+export const createContent = async (moduleId, formData) => {
   const token = localStorage.getItem("token");
 
-  const response = await api.post(`/cours/${coursId}/add-content/`, formData, {
+  const response = await api.post(`/cours/modules/${moduleId}/add-content/`, formData, {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "multipart/form-data",

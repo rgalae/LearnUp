@@ -31,7 +31,8 @@ from results.models import Resultat
 
 from courses.models import (
     Inscription,
-    Cours
+    Cours,
+    Module
 )
 
 from courses.views import (
@@ -50,39 +51,36 @@ logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def get_quiz(request, cours_id):
+def get_quiz(request, module_id):
 
     if request.user.role == "teacher":
-
         try:
-            Cours.objects.get(
-                id=cours_id,
-                enseignant=request.user
+            Module.objects.get(
+                id=module_id,
+                cours__enseignant=request.user
             )
-
-        except Cours.DoesNotExist:
-
+        except Module.DoesNotExist:
             return Response(
-                {"error": "Not your course"},
+                {"error": "Not your module"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
     else:
 
+        module = get_object_or_404(Module, id=module_id)
         enrolled = Inscription.objects.filter(
             etudiant=request.user,
-            cours_id=cours_id
+            cours=module.cours
         ).exists()
 
         if not enrolled:
-
             return Response(
                 {"error": "Not enrolled"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
     quiz = Quiz.objects.filter(
-        cours_id=cours_id
+        module_id=module_id
     ).first()
 
     if not quiz:
@@ -134,6 +132,25 @@ def submit_quiz(request):
             {"error": "Quiz not found"},
             status=status.HTTP_404_NOT_FOUND
         )
+
+    # -------------------------------------
+    # ENFORCE MAX 3 ATTEMPTS AND 24H LOCK
+    # -------------------------------------
+    from datetime import timedelta
+    attempts = Tentative.objects.filter(etudiant=request.user, quiz=quiz).order_by('-date_fin')
+    attempts_count = attempts.count()
+
+    if attempts_count >= 3:
+        last_attempt = attempts.first()
+        if last_attempt and last_attempt.date_fin:
+            if timezone.now() < last_attempt.date_fin + timedelta(hours=24):
+                return Response(
+                    {"error": "You reached the maximum attempts. Try again in 24 hours."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            else:
+                # 24h passed, reset attempts
+                attempts.delete()
 
     score = 0
 
@@ -200,7 +217,7 @@ def submit_quiz(request):
 
     Resultat.objects.update_or_create(
         etudiant=request.user,
-        cours=quiz.cours,
+        cours=quiz.module.cours,
         defaults={
             "note": final_score
         }
@@ -208,7 +225,7 @@ def submit_quiz(request):
 
     progress = update_course_progress(
         request.user,
-        quiz.cours
+        quiz.module.cours
     )
 
     return Response({
@@ -243,27 +260,31 @@ def create_quiz(request):
         )
 
     try:
-        cours = Cours.objects.get(
-            id=serializer.validated_data['cours_id']
+        module = Module.objects.get(
+            id=serializer.validated_data['module_id']
         )
 
-    except Cours.DoesNotExist:
+    except Module.DoesNotExist:
 
         return Response(
-            {"error": "Course not found"},
+            {"error": "Module not found"},
             status=status.HTTP_404_NOT_FOUND
         )
 
-    if cours.enseignant != request.user:
+    if module.cours.enseignant != request.user:
 
         return Response(
-            {"error": "Not your course"},
+            {"error": "Not your module"},
             status=status.HTTP_403_FORBIDDEN
         )
+        
+    max_order = Quiz.objects.filter(module=module).aggregate(max_order=models.Max('order'))['max_order']
+    next_order = 0 if max_order is None else max_order + 1
 
     quiz = Quiz.objects.create(
         titre=serializer.validated_data['titre'],
-        cours=cours
+        module=module,
+        order=next_order
     )
 
     return Response({
@@ -308,7 +329,7 @@ def create_question(request):
             status=status.HTTP_404_NOT_FOUND
         )
 
-    if quiz.cours.enseignant != request.user:
+    if quiz.module.cours.enseignant != request.user:
 
         return Response(
             {"error": "Not your quiz"},
@@ -367,7 +388,7 @@ def create_response(request):
             status=status.HTTP_404_NOT_FOUND
         )
 
-    if question.quiz.cours.enseignant != request.user:
+    if question.quiz.module.cours.enseignant != request.user:
 
         return Response(
             {"error": "Not your question"},

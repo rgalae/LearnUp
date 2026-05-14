@@ -49,12 +49,36 @@ class CourseListSerializer(serializers.ModelSerializer):
 
 
 # =====================================================
+# MODULE SERIALIZER
+# =====================================================
+
+from .models import Module
+
+class ModuleSerializer(serializers.ModelSerializer):
+    contenus = ContenuSerializer(
+        many=True,
+        read_only=True
+    )
+    
+    # We will also add quizzes here later if needed, or fetch them in the view
+    
+    class Meta:
+        model = Module
+        fields = [
+            'id',
+            'titre',
+            'description',
+            'order',
+            'contenus'
+        ]
+
+# =====================================================
 # COURSE DETAIL SERIALIZER
 # =====================================================
 
 class CourseDetailSerializer(serializers.ModelSerializer):
 
-    contenus = ContenuSerializer(
+    modules = ModuleSerializer(
         many=True,
         read_only=True
     )
@@ -65,7 +89,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
             'id',
             'titre',
             'description',
-            'contenus'
+            'modules'
         ]
 
 
@@ -78,6 +102,16 @@ class CreateCourseSerializer(serializers.Serializer):
     titre = serializers.CharField(max_length=255)
 
     description = serializers.CharField()
+
+
+# =====================================================
+# CREATE MODULE SERIALIZER
+# =====================================================
+
+class CreateModuleSerializer(serializers.Serializer):
+    cours_id = serializers.IntegerField()
+    titre = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
 
 
 # =====================================================

@@ -43,11 +43,6 @@ function Sidebar() {
       path: "/teacher/results",
       end: false,
     },
-    {
-      name: "Students",
-      path: "/teacher/students",
-      end: false,
-    },
   ];
 
   const links = role === "teacher" ? TeacherLinks : StudentLinks;

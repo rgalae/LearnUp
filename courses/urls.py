@@ -55,12 +55,27 @@ urlpatterns = [
     ),
 
     # =====================================================
-    # TEACHER STUDENTS
+    # MODULES
     # =====================================================
 
     path(
-        'teacher/students/',
-        views.teacher_students
+        'modules/create/',
+        views.create_module
+    ),
+
+    path(
+        'modules/<int:module_id>/update/',
+        views.update_module
+    ),
+
+    path(
+        'modules/<int:module_id>/delete/',
+        views.delete_module
+    ),
+
+    path(
+        'modules/reorder/',
+        views.reorder_modules
     ),
 
     # =====================================================
@@ -96,7 +111,7 @@ urlpatterns = [
     # =====================================================
 
     path(
-        '<int:cours_id>/add-content/',
+        'modules/<int:module_id>/add-content/',
         views.add_content
     ),
 
@@ -134,5 +149,10 @@ urlpatterns = [
     path(
         'progress/',
         views.get_progress
+    ),
+    
+    path(
+        '<int:cours_id>/retake/',
+        views.retake_course
     ),
 ]

@@ -10,13 +10,35 @@ from .views import (
 
 urlpatterns = [
 
-    path('<int:cours_id>/', get_quiz),
+    # student
+    path(
+        '<int:module_id>/',
+        get_quiz
+    ),
 
-    path('submit/', submit_quiz),
+    path(
+        'submit/',
+        submit_quiz
+    ),
 
-    path('create/', create_quiz),
+    path(
+        'reponse/',
+        submit_quiz
+    ),
 
-    path('question/create/', create_question),
+    # teacher
+    path(
+        'create/',
+        create_quiz
+    ),
 
-    path('response/create/', create_response),
+    path(
+        'question/create/',
+        create_question
+    ),
+
+    path(
+        'response/create/',
+        create_response
+    ),
 ]

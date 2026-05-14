@@ -8,5 +8,12 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         token["role"] = user.role
         token["username"] = user.username
+        token["email"] = user.email
+        
+        # Add profile picture if it exists
+        if user.profile_picture:
+            token["profile_picture"] = user.profile_picture.url
+        else:
+            token["profile_picture"] = None
 
         return token

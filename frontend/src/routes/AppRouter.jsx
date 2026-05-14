@@ -18,9 +18,11 @@ import QuizPage from "../pages/student/QuizPage";
 import TeacherDashboard from "../pages/teacher/TeacherDashboard";
 import TeacherCourses from "../pages/teacher/TeacherCourses";
 import TeacherResults from "../pages/teacher/TeacherResults";
-import TeacherStudents from "../pages/teacher/TeacherStudents";
 import TeacherCreateCourse from "../pages/teacher/TeacherCreateCourse";
 import TeacherCourseDetail from "../pages/teacher/TeacherCourseDetail";
+
+import Profile from "../pages/Profile";
+import Settings from "../pages/Settings";
 
 function AppRouter() {
   return (
@@ -33,6 +35,28 @@ function AppRouter() {
       <Route path="/login" element={<Login />} />
 
       <Route path="/register" element={<Register />} />
+
+      {/* SHARED PROTECTED ROUTES */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Profile />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Settings />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
 
       {/* STUDENT ROUTES */}
       <Route
@@ -140,17 +164,6 @@ function AppRouter() {
           <ProtectedRoute>
             <DashboardLayout>
               <TeacherResults />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/teacher/students"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <TeacherStudents />
             </DashboardLayout>
           </ProtectedRoute>
         }

@@ -8,7 +8,10 @@ from .views import (
     teacher_dashboard,
     teacher_results,
     student_dashboard,
-    student_results
+    student_results,
+    get_notifications,
+    mark_notification_read,
+    update_profile
 )
 
 urlpatterns = [
@@ -63,5 +66,24 @@ urlpatterns = [
     path(
         'teacher-results/',
         teacher_results
+    ),
+
+    # =====================================================
+    # PROFILE & NOTIFICATIONS
+    # =====================================================
+
+    path(
+        'profile/update/',
+        update_profile
+    ),
+
+    path(
+        'notifications/',
+        get_notifications
+    ),
+
+    path(
+        'notifications/<int:id>/read/',
+        mark_notification_read
     ),
 ]

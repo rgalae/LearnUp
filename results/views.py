@@ -171,37 +171,21 @@ def student_results(request):
     data = []
 
     for inscription in inscriptions:
-
-        total_content = Contenu.objects.filter(
-            cours=inscription.cours
-        ).count()
-
-        completed_content = CompletedContent.objects.filter(
-            etudiant=request.user,
-            contenu__cours=inscription.cours
-        ).count()
-
-        progress = 0
-
-        if total_content > 0:
-            progress = int(
-                (completed_content / total_content) * 100
-            )
-
-        gpa = round(progress / 25, 2)
+        
+        result = Resultat.objects.filter(etudiant=request.user, cours=inscription.cours).first()
+        score = result.note if result else 0
 
         data.append({
 
             "course": inscription.cours.titre,
+            "course_id": inscription.cours.id,
 
-            "score": progress,
-
-            "gpa": gpa,
+            "score": score,
 
             "status":
                 "Passed"
-                if progress == 100
-                else "In Progress"
+                if score >= 80
+                else "FAILED"
         })
 
     return Response(data)
@@ -287,15 +271,13 @@ def teacher_dashboard(request):
 def teacher_results(request):
 
     if request.user.role != "teacher":
+        return Response({"error": "Teacher only"}, status=403)
 
-        return Response(
-            {"error": "Teacher only"},
-            status=403
-        )
-
-    teacher_courses = Cours.objects.filter(
-        enseignant=request.user
-    )
+    course_id = request.query_params.get("course_id")
+    if course_id:
+        teacher_courses = Cours.objects.filter(id=course_id, enseignant=request.user)
+    else:
+        teacher_courses = Cours.objects.filter(enseignant=request.user)
 
     inscriptions = Inscription.objects.filter(
         cours__in=teacher_courses
@@ -304,38 +286,17 @@ def teacher_results(request):
     data = []
 
     for inscription in inscriptions:
-
-        total_content = Contenu.objects.filter(
-            cours=inscription.cours
-        ).count()
-
-        completed_content = CompletedContent.objects.filter(
-            etudiant=inscription.etudiant,
-            contenu__cours=inscription.cours
-        ).count()
-
-        progress = 0
-
-        if total_content > 0:
-            progress = int(
-                (completed_content / total_content) * 100
-            )
-
-        gpa = round(progress / 25, 2)
+        result = Resultat.objects.filter(etudiant=inscription.etudiant, cours=inscription.cours).first()
+        score = result.note if result else 0
 
         data.append({
 
-            "student":
-                inscription.etudiant.username,
-
-            "course":
-                inscription.cours.titre,
-
-            "score":
-                progress,
-
-            "gpa":
-                gpa
+            "student": inscription.etudiant.username,
+            "email": inscription.etudiant.email,
+            "course": inscription.cours.titre,
+            "class": "General", # Placeholder for class if model is added later
+            "score": score,
+            "status": "Passed" if score >= 80 else "FAILED"
         })
 
     return Response(data)
