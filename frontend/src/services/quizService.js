@@ -1,9 +1,9 @@
 import api from "../api/axios";
 
-export const getQuiz = async (coursId) => {
+export const getQuiz = async (quizId) => {
   const token = localStorage.getItem("token");
 
-  const response = await api.get(`/quiz/${coursId}/`, {
+  const response = await api.get(`/quiz/${quizId}/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -57,5 +57,13 @@ export const createResponse = async (responseData) => {
     },
   });
 
+  return response.data;
+};
+
+export const deleteQuiz = async (quizId) => {
+  const token = localStorage.getItem("token");
+  const response = await api.delete(`/quiz/${quizId}/delete/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };

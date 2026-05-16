@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 import logging
 
@@ -9,6 +10,7 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from django.db import models
 
 from drf_yasg.utils import swagger_auto_schema
 
@@ -51,26 +53,19 @@ logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def get_quiz(request, module_id):
-
+def get_quiz(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+    
     if request.user.role == "teacher":
-        try:
-            Module.objects.get(
-                id=module_id,
-                cours__enseignant=request.user
-            )
-        except Module.DoesNotExist:
+        if quiz.module.cours.enseignant != request.user:
             return Response(
                 {"error": "Not your module"},
                 status=status.HTTP_403_FORBIDDEN
             )
-
     else:
-
-        module = get_object_or_404(Module, id=module_id)
         enrolled = Inscription.objects.filter(
             etudiant=request.user,
-            cours=module.cours
+            cours=quiz.module.cours
         ).exists()
 
         if not enrolled:
@@ -79,19 +74,7 @@ def get_quiz(request, module_id):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-    quiz = Quiz.objects.filter(
-        module_id=module_id
-    ).first()
-
-    if not quiz:
-
-        return Response(
-            {"error": "Quiz not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
     serializer = QuizSerializer(quiz)
-
     return Response(serializer.data)
 
 
@@ -405,3 +388,16 @@ def create_response(request):
         "message": "Response created",
         "response_id": response_obj.id
     })
+
+
+# =====================================================
+# DELETE QUIZ
+# =====================================================
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def delete_quiz(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id, module__cours__enseignant=request.user)
+    quiz.delete()
+    return Response({"message": "Quiz deleted"})

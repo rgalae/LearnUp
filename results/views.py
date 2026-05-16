@@ -225,12 +225,12 @@ def teacher_dashboard(request):
     ):
 
         total_content = Contenu.objects.filter(
-            cours=inscription.cours
+            module__cours=inscription.cours
         ).count()
 
         completed_content = CompletedContent.objects.filter(
             etudiant=inscription.etudiant,
-            contenu__cours=inscription.cours
+            contenu__module__cours=inscription.cours
         ).count()
 
         progress = 0

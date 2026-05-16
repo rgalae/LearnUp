@@ -1,8 +1,9 @@
 from django.shortcuts import get_object_or_404
 from django.http import FileResponse, HttpResponse
+from django.db import models
 
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -91,6 +92,7 @@ def student_required(view_func):
 # =====================================================
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_courses(request):
 
     courses = Cours.objects.all()
@@ -342,11 +344,7 @@ def desinscrire(request):
 @permission_classes([IsAuthenticated])
 @student_required
 def cours_detail(request, id):
-
-    cours = get_object_or_404(
-        Cours,
-        id=id
-    )
+    cours = get_object_or_404(Cours, id=id)
 
     enrolled = Inscription.objects.filter(
         etudiant=request.user,
@@ -354,60 +352,32 @@ def cours_detail(request, id):
     ).exists()
 
     if not enrolled:
-
         return Response(
             {"error": "Not enrolled"},
             status=status.HTTP_403_FORBIDDEN
         )
 
-    modules = Module.objects.filter(cours=cours).order_by('order')
-    modules_data = []
+    # Use serializer for the core structure
+    serializer = CourseDetailSerializer(cours)
+    data = serializer.data
 
-    for module in modules:
-        contenus = Contenu.objects.filter(module=module).order_by('order')
-        contenus_data = []
-        for contenu in contenus:
-            completed = CompletedContent.objects.filter(etudiant=request.user, contenu=contenu).exists()
-            contenus_data.append({
-                "id": contenu.id,
-                "titre": contenu.titre,
-                "video_url": contenu.video_url,
-                "fichier": contenu.fichier.url if contenu.fichier else None,
-                "completed": completed
-            })
-            
-        quizzes = Quiz.objects.filter(module=module).order_by('order')
-        quizzes_data = []
-        for q in quizzes:
-            quizzes_data.append({
-                "id": q.id,
-                "titre": q.titre
-            })
-
-        modules_data.append({
-            "id": module.id,
-            "titre": module.titre,
-            "description": module.description,
-            "contenus": contenus_data,
-            "quizzes": quizzes_data
-        })
-
-    result = Resultat.objects.filter(etudiant=request.user, cours=cours).first()
+    # Add student-specific fields
     progress = Progression.objects.filter(etudiant=request.user, cours=cours).first()
+    result = Resultat.objects.filter(etudiant=request.user, cours=cours).first()
     
-    # Global quiz exists flag (can be removed if frontend iterates modules)
-    quiz_exists = Quiz.objects.filter(module__cours=cours).exists()
+    data["progress"] = progress.progression if progress else 0
+    data["score"] = result.note if result else 0
+    data["enseignant"] = cours.enseignant.username
+    
+    # Update modules with completion status
+    for module_data in data["modules"]:
+        for contenu_data in module_data["contenus"]:
+            contenu_data["completed"] = CompletedContent.objects.filter(
+                etudiant=request.user, 
+                contenu_id=contenu_data["id"]
+            ).exists()
 
-    return Response({
-        "id": cours.id,
-        "titre": cours.titre,
-        "description": cours.description,
-        "enseignant": cours.enseignant.username,
-        "progress": progress.progression if progress else 0,
-        "score": result.note if result else 0,
-        "quiz_exists": quiz_exists,
-        "modules": modules_data
-    })
+    return Response(data)
 
 
 # =====================================================
@@ -564,6 +534,65 @@ def add_content(request, module_id):
 
 
 # =====================================================
+# UPDATE CONTENT
+# =====================================================
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def update_content(request, content_id):
+    contenu = get_object_or_404(
+        Contenu,
+        id=content_id,
+        module__cours__enseignant=request.user
+    )
+    
+    contenu.titre = request.data.get("titre", contenu.titre)
+    contenu.video_url = request.data.get("video_url", contenu.video_url)
+    
+    if 'fichier' in request.FILES:
+        contenu.fichier = request.FILES['fichier']
+    elif 'fichier' in request.data and request.data['fichier'] is None:
+        contenu.fichier = None
+        
+    contenu.save()
+    
+    return Response({"message": "Content updated"})
+
+
+# =====================================================
+# DELETE CONTENT
+# =====================================================
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def delete_content(request, content_id):
+    contenu = get_object_or_404(
+        Contenu,
+        id=content_id,
+        module__cours__enseignant=request.user
+    )
+    contenu.delete()
+    return Response({"message": "Content deleted"})
+
+
+# =====================================================
+# REORDER CONTENT
+# =====================================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def reorder_content(request, module_id):
+    module = get_object_or_404(Module, id=module_id, cours__enseignant=request.user)
+    content_data = request.data.get("contents", []) # List of {id, order}
+    for item in content_data:
+        Contenu.objects.filter(id=item['id'], module=module).update(order=item['order'])
+    return Response({"message": "Content reordered"})
+
+
+# =====================================================
 # COMPLETE CONTENT
 # =====================================================
 
@@ -586,14 +615,14 @@ def complete_content(request):
 
     progress = update_course_progress(
         request.user,
-        contenu.cours
+        contenu.module.cours
     )
 
     if progress == 100:
         from users.models import Notification
         Notification.objects.create(
-            user=contenu.cours.enseignant,
-            message=f"Student {request.user.username} has completed {contenu.cours.titre}!"
+            user=contenu.module.cours.enseignant,
+            message=f"Student {request.user.username} has completed {contenu.module.cours.titre}!"
         )
 
     return Response({
@@ -667,12 +696,12 @@ def download_content(request, contenu_id):
 
     is_teacher_owner = (
         request.user.role == "teacher"
-        and contenu.cours.enseignant == request.user
+        and contenu.module.cours.enseignant == request.user
     )
 
     is_enrolled_student = Inscription.objects.filter(
         etudiant=request.user,
-        cours=contenu.cours
+        cours=contenu.module.cours
     ).exists()
 
     if not (is_teacher_owner or is_enrolled_student):

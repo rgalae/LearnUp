@@ -304,3 +304,38 @@ export const createContent = async (moduleId, formData) => {
 
   return response.data;
 };
+
+export const updateContent = async (id, formData) => {
+  const token = localStorage.getItem("token");
+  const response = await api.put(`/cours/content/${id}/update/`, formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
+
+export const deleteContent = async (id) => {
+  const token = localStorage.getItem("token");
+  const response = await api.delete(`/cours/content/${id}/delete/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const reorderModules = async (data) => {
+  const token = localStorage.getItem("token");
+  const response = await api.post("/cours/modules/reorder/", data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const reorderContent = async (moduleId, data) => {
+  const token = localStorage.getItem("token");
+  const response = await api.post(`/cours/modules/${moduleId}/reorder-content/`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};

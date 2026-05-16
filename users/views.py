@@ -236,7 +236,7 @@ def teacher_dashboard(request):
     ).count()
 
     quizzes_count = Quiz.objects.filter(
-        cours__in=teacher_courses
+        module__cours__in=teacher_courses
     ).count()
 
     results = Resultat.objects.filter(

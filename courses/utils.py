@@ -12,12 +12,12 @@ from results.models import Resultat
 def update_course_progress(user, cours):
 
     total_contents = Contenu.objects.filter(
-        cours=cours
+        module__cours=cours
     ).count()
 
     completed_contents = CompletedContent.objects.filter(
         etudiant=user,
-        contenu__cours=cours
+        contenu__module__cours=cours
     ).count()
 
     # lessons/videos/pdf = 80%
@@ -32,7 +32,7 @@ def update_course_progress(user, cours):
     quiz_progress = 0
 
     quiz_exists = Quiz.objects.filter(
-        cours=cours
+        module__cours=cours
     ).exists()
 
     passed_quiz = Resultat.objects.filter(

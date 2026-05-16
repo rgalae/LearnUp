@@ -7,7 +7,7 @@ import Button from "../../components/ui/Button";
 import { getQuiz, submitQuiz } from "../../services/quizService.js";
 
 function QuizPage() {
-  const { coursId } = useParams();
+  const { quizId } = useParams();
 
   const navigate = useNavigate();
 
@@ -25,7 +25,7 @@ function QuizPage() {
 
   const fetchQuiz = async () => {
     try {
-      const data = await getQuiz(coursId);
+      const data = await getQuiz(quizId);
 
       console.log(data);
 

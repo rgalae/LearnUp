@@ -76,37 +76,41 @@ function TeacherCourses() {
         </Link>
       </div>
 
-      <div className="grid gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.map((course) => (
           <div
             key={course.id}
-            className="bg-[#0d1526] border border-white/10 rounded-2xl p-6 hover:border-indigo-500/30 transition"
+            className="bg-[#0d1526] border border-white/10 rounded-2xl p-6 hover:border-indigo-500/30 transition-all cursor-pointer group flex flex-col justify-between"
+            onClick={() => window.location.href = `/teacher/courses/${course.id}`}
           >
-            <Link to={`/teacher/courses/${course.id}`} className="block">
-              <h2 className="text-xl font-semibold text-white">
+            <div>
+              <h2 className="text-2xl font-bold text-white group-hover:text-indigo-400 transition">
                 {course.titre}
               </h2>
 
-              <p className="text-slate-400 mt-3">{course.description}</p>
+              <p className="text-slate-400 mt-3 line-clamp-3">{course.description}</p>
 
-              <p className="text-indigo-400 text-sm mt-4">
-                Teacher: {course.enseignant}
-              </p>
-            </Link>
+              <div className="flex gap-4 mt-6">
+                 <span className="text-xs text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full">
+                    <i className="fas fa-user-tie mr-1"></i> {course.enseignant}
+                 </span>
+              </div>
+            </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3 mt-8">
               <Link
                 to={`/teacher/courses/${course.id}`}
-                className="bg-indigo-600 hover:bg-indigo-500 transition px-4 py-2 rounded-xl text-white text-sm"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 transition px-4 py-2.5 rounded-xl text-white text-sm font-bold text-center"
+                onClick={(e) => e.stopPropagation()}
               >
                 Manage
               </Link>
 
               <button
-                onClick={() => handleDelete(course.id)}
-                className="bg-red-600 hover:bg-red-500 transition px-4 py-2 rounded-xl text-white text-sm"
+                onClick={(e) => { e.stopPropagation(); handleDelete(course.id); }}
+                className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition px-4 py-2.5 rounded-xl text-sm font-bold border border-red-500/20"
               >
-                Delete
+                <i className="fas fa-trash"></i>
               </button>
             </div>
           </div>

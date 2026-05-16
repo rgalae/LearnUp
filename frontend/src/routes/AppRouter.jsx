@@ -92,7 +92,7 @@ function AppRouter() {
         }
       />
       <Route
-        path="/student/quiz/:coursId"
+        path="/student/quiz/:quizId"
         element={
           <ProtectedRoute>
             <DashboardLayout>

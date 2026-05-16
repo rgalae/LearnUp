@@ -29,29 +29,24 @@ class Resultat(models.Model):
         null=True
     )
 
-    gpa = models.FloatField(
-        blank=True,
-        null=True
-    )
-
     def __str__(self):
         return f"{self.etudiant} - {self.cours} ({self.note})"
 
     def save(self, *args, **kwargs):
 
         if self.note >= 16:
-            self.grade, self.gpa = "A", 4.0
+            self.grade = "A"
 
         elif self.note >= 14:
-            self.grade, self.gpa = "B", 3.5
+            self.grade = "B"
 
         elif self.note >= 12:
-            self.grade, self.gpa = "C", 2.5
+            self.grade = "C"
 
         elif self.note >= 10:
-            self.grade, self.gpa = "D", 2.0
+            self.grade = "D"
 
         else:
-            self.grade, self.gpa = "F", 0.0
+            self.grade = "F"
 
         super().save(*args, **kwargs)

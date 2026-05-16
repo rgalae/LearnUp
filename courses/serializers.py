@@ -53,6 +53,7 @@ class CourseListSerializer(serializers.ModelSerializer):
 # =====================================================
 
 from .models import Module
+from quiz.models import Quiz
 
 class ModuleSerializer(serializers.ModelSerializer):
     contenus = ContenuSerializer(
@@ -60,7 +61,7 @@ class ModuleSerializer(serializers.ModelSerializer):
         read_only=True
     )
     
-    # We will also add quizzes here later if needed, or fetch them in the view
+    quizzes = serializers.SerializerMethodField()
     
     class Meta:
         model = Module
@@ -69,8 +70,13 @@ class ModuleSerializer(serializers.ModelSerializer):
             'titre',
             'description',
             'order',
-            'contenus'
+            'contenus',
+            'quizzes'
         ]
+
+    def get_quizzes(self, obj):
+        quizzes = Quiz.objects.filter(module=obj).order_by('order')
+        return [{"id": q.id, "titre": q.titre} for q in quizzes]
 
 # =====================================================
 # COURSE DETAIL SERIALIZER

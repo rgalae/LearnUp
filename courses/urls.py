@@ -121,6 +121,21 @@ urlpatterns = [
     ),
 
     path(
+        'content/<int:content_id>/update/',
+        views.update_content
+    ),
+
+    path(
+        'content/<int:content_id>/delete/',
+        views.delete_content
+    ),
+
+    path(
+        'modules/<int:module_id>/reorder-content/',
+        views.reorder_content
+    ),
+
+    path(
         'download/<int:contenu_id>/',
         views.download_content
     ),

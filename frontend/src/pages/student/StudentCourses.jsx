@@ -81,11 +81,12 @@ function StudentCourses() {
         {courses.map((course) => (
           <div
             key={course.id}
-            className="bg-[#0d1526] border border-white/[0.06] rounded-2xl p-5 hover:border-indigo-500 transition-all"
+            className="bg-[#0d1526] border border-white/[0.06] rounded-2xl p-5 hover:border-indigo-500 transition-all cursor-pointer group"
+            onClick={() => window.location.href = `/student/courses/${course.id}`}
           >
-            <h3 className="text-lg font-semibold text-white">{course.titre}</h3>
+            <h3 className="text-lg font-semibold text-white group-hover:text-indigo-400 transition">{course.titre}</h3>
 
-            <p className="text-sm text-slate-400 mt-2">{course.description}</p>
+            <p className="text-sm text-slate-400 mt-2 line-clamp-2">{course.description}</p>
 
             <p className="text-xs text-indigo-400 mt-4">
               Teacher: {course.enseignant}
@@ -94,7 +95,8 @@ function StudentCourses() {
             <div className="mt-5 flex gap-3">
               <Link
                 to={`/student/courses/${course.id}`}
-                className="border border-white/10 px-4 py-2 rounded-xl text-white text-sm"
+                className="border border-white/10 px-4 py-2 rounded-xl text-white text-sm hover:bg-white/5 transition"
+                onClick={(e) => e.stopPropagation()}
               >
                 Open
               </Link>

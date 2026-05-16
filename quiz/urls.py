@@ -5,14 +5,15 @@ from .views import (
     submit_quiz,
     create_quiz,
     create_question,
-    create_response
+    create_response,
+    delete_quiz
 )
 
 urlpatterns = [
 
     # student
     path(
-        '<int:module_id>/',
+        '<int:quiz_id>/',
         get_quiz
     ),
 
@@ -21,10 +22,6 @@ urlpatterns = [
         submit_quiz
     ),
 
-    path(
-        'reponse/',
-        submit_quiz
-    ),
 
     # teacher
     path(
@@ -40,5 +37,10 @@ urlpatterns = [
     path(
         'response/create/',
         create_response
+    ),
+
+    path(
+        '<int:quiz_id>/delete/',
+        delete_quiz
     ),
 ]
