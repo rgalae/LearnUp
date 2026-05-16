@@ -51,7 +51,7 @@ export const createQuestion = async (questionData) => {
 export const createResponse = async (responseData) => {
   const token = localStorage.getItem("token");
 
-  const response = await api.post("/quiz/reponse/create/", responseData, {
+  const response = await api.post("/quiz/response/create/", responseData, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
