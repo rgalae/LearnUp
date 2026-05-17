@@ -172,7 +172,10 @@ def student_results(request):
 
     for inscription in inscriptions:
         
-        result = Resultat.objects.filter(etudiant=request.user, cours=inscription.cours).first()
+        result = Resultat.objects.filter(
+    etudiant=request.user,
+    cours=inscription.cours
+).order_by('-note').first()
         score = result.note if result else 0
 
         data.append({
@@ -286,7 +289,10 @@ def teacher_results(request):
     data = []
 
     for inscription in inscriptions:
-        result = Resultat.objects.filter(etudiant=inscription.etudiant, cours=inscription.cours).first()
+        result = Resultat.objects.filter(
+        etudiant=request.user,
+        cours=inscription.cours
+    ).order_by('-note').first()
         score = result.note if result else 0
 
         data.append({

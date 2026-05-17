@@ -30,7 +30,10 @@ function QuizPage() {
 
   const handleSelect = (questionId, reponseId) => {
     const filtered = answers.filter((a) => a.question_id !== questionId);
-    setAnswers([...filtered, { question_id: questionId, reponse_id: reponseId }]);
+    setAnswers([
+      ...filtered,
+      { question_id: questionId, reponse_id: reponseId },
+    ]);
   };
 
   const handleTextAnswer = (questionId, text) => {
@@ -46,7 +49,8 @@ function QuizPage() {
       setResult(data);
     } catch (err) {
       const msg =
-        err?.response?.data?.error || "Failed to submit quiz. Please try again.";
+        err?.response?.data?.error ||
+        "Failed to submit quiz. Please try again.";
       alert(msg);
     } finally {
       setSubmitting(false);
@@ -86,10 +90,13 @@ function QuizPage() {
 
       {/* QUIZ HEADER */}
       <div className="bg-[#0d1526] border border-white/10 rounded-2xl p-6">
-        <p className="text-indigo-400 text-xs font-bold uppercase tracking-widest mb-2">Quiz</p>
+        <p className="text-indigo-400 text-xs font-bold uppercase tracking-widest mb-2">
+          Quiz
+        </p>
         <h1 className="text-3xl font-extrabold text-white">{quiz.titre}</h1>
         <p className="text-slate-400 mt-2">
-          {quiz.questions?.length || 0} question{quiz.questions?.length !== 1 ? "s" : ""}
+          {quiz.questions?.length || 0} question
+          {quiz.questions?.length !== 1 ? "s" : ""}
           {" · "}Answer all questions, then submit.
         </p>
       </div>
@@ -112,16 +119,22 @@ function QuizPage() {
               {passed ? "🎉" : "😔"}
             </div>
             <div>
-              <h2 className={`text-3xl font-black ${passed ? "text-emerald-300" : "text-rose-300"}`}>
+              <h2
+                className={`text-3xl font-black ${passed ? "text-emerald-300" : "text-rose-300"}`}
+              >
                 {passed ? "Quiz Passed!" : "Quiz Failed"}
               </h2>
-              <p className={`text-lg font-bold mt-1 ${passed ? "text-emerald-400" : "text-rose-400"}`}>
+              <p
+                className={`text-lg font-bold mt-1 ${passed ? "text-emerald-400" : "text-rose-400"}`}
+              >
                 Your score: {score}%
               </p>
             </div>
           </div>
 
-          <p className={`text-sm ${passed ? "text-emerald-300/70" : "text-rose-300/70"}`}>
+          <p
+            className={`text-sm ${passed ? "text-emerald-300/70" : "text-rose-300/70"}`}
+          >
             {passed
               ? "Excellent work! You passed this quiz. A certificate has been generated for you if this course qualifies."
               : "You need at least 80% to pass. Review the material and try again (up to 3 attempts per 24 hours)."}
@@ -129,14 +142,18 @@ function QuizPage() {
 
           {result.progression !== undefined && (
             <div className="flex items-center gap-3">
-              <span className="text-slate-400 text-xs font-medium">Course Progress:</span>
+              <span className="text-slate-400 text-xs font-medium">
+                Course Progress:
+              </span>
               <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden max-w-xs">
                 <div
                   className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-700"
                   style={{ width: `${result.progression}%` }}
                 />
               </div>
-              <span className="text-indigo-400 font-bold text-sm">{result.progression}%</span>
+              <span className="text-indigo-400 font-bold text-sm">
+                {result.progression}%
+              </span>
             </div>
           )}
 
@@ -153,7 +170,7 @@ function QuizPage() {
             >
               📚 My Courses
             </button>
-            {passed && result.certificate && (
+            {passed && result.certificate && result.progression >= 100 && (
               <button
                 onClick={async () => {
                   try {
@@ -161,9 +178,14 @@ function QuizPage() {
                     const { default: api } = await import("../../api/axios");
                     const res = await api.get(
                       `/cours/certificat/${result.certificate.course_id}/pdf/`,
-                      { responseType: "blob", headers: { Authorization: `Bearer ${token}` } }
+                      {
+                        responseType: "blob",
+                        headers: { Authorization: `Bearer ${token}` },
+                      },
                     );
-                    const url = window.URL.createObjectURL(new Blob([res.data]));
+                    const url = window.URL.createObjectURL(
+                      new Blob([res.data]),
+                    );
                     const a = document.createElement("a");
                     a.href = url;
                     a.download = `certificate_${result.certificate.course_id}.pdf`;
@@ -202,7 +224,9 @@ function QuizPage() {
               {question.type_question === "choix" ? (
                 question.reponses?.map((reponse) => {
                   const selected = answers.some(
-                    (a) => a.question_id === question.question_id && a.reponse_id === reponse.id
+                    (a) =>
+                      a.question_id === question.question_id &&
+                      a.reponse_id === reponse.id,
                   );
                   return (
                     <label
@@ -211,8 +235,8 @@ function QuizPage() {
                         result !== null
                           ? "cursor-default opacity-70"
                           : selected
-                          ? "border-indigo-500 bg-indigo-500/10"
-                          : "border-white/10 hover:border-indigo-500/50 hover:bg-white/5"
+                            ? "border-indigo-500 bg-indigo-500/10"
+                            : "border-white/10 hover:border-indigo-500/50 hover:bg-white/5"
                       }`}
                     >
                       <input
@@ -224,14 +248,18 @@ function QuizPage() {
                         }
                         className="accent-indigo-500"
                       />
-                      <span className="text-slate-300 text-sm">{reponse.texte}</span>
+                      <span className="text-slate-300 text-sm">
+                        {reponse.texte}
+                      </span>
                     </label>
                   );
                 })
               ) : (
                 <textarea
                   disabled={result !== null}
-                  onChange={(e) => handleTextAnswer(question.question_id, e.target.value)}
+                  onChange={(e) =>
+                    handleTextAnswer(question.question_id, e.target.value)
+                  }
                   placeholder="Type your answer here..."
                   rows={3}
                   className="w-full bg-[#111827] border border-white/10 text-white px-4 py-3 rounded-xl outline-none focus:border-indigo-500 resize-none text-sm disabled:opacity-60"

@@ -38,7 +38,7 @@ def update_course_progress(user, cours):
     passed_quiz = Resultat.objects.filter(
         etudiant=user,
         cours=cours,
-        note__gte=50
+        note__gte=80
     ).exists()
 
     if quiz_exists and passed_quiz:

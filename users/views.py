@@ -285,23 +285,40 @@ def student_results(request):
     from results.models import Resultat
     from courses.models import Certificat, Progression, Inscription
 
-    inscriptions = Inscription.objects.filter(etudiant=request.user).select_related('cours')
+    inscriptions = Inscription.objects.filter(
+        etudiant=request.user
+    ).select_related('cours')
 
     data = []
 
     for inscription in inscriptions:
-        cours = inscription.cours
-        result = Resultat.objects.filter(etudiant=request.user, cours=cours).first()
-        prog = Progression.objects.filter(etudiant=request.user, cours=cours).first()
-        cert = Certificat.objects.filter(etudiant=request.user, cours=cours).first()
 
-        score = result.note if result else 0
+        cours = inscription.cours
+
+        result = Resultat.objects.filter(
+            etudiant=request.user,
+            cours=cours
+        ).order_by('-note').first()
+
+        prog = Progression.objects.filter(
+            etudiant=request.user,
+            cours=cours
+        ).first()
+
+        cert = Certificat.objects.filter(
+            etudiant=request.user,
+            cours=cours
+        ).first()
+
+        score = float(result.note) if result and result.note is not None else 0
+
         progression = prog.progression if prog else 0
 
         data.append({
             "cours": cours.titre,
             "cours_id": cours.id,
             "note": score,
+
             "grade": (
                 "Excellent" if score >= 90 else
                 "Very Good" if score >= 80 else
@@ -309,17 +326,32 @@ def student_results(request):
                 "Average" if score >= 50 else
                 "Failed"
             ),
+
             "gpa": round(score / 20, 2),
+
             "progression": progression,
-            "status": "Passed" if score >= 80 else "Failed",
+            "status": (
+                "Passed"
+                if score >= 80 and progression >= 100
+                else "In Progress"
+                if progression < 100
+                else "Quiz Failed"
+            ),
+
             "has_certificate": cert is not None,
-            "certificate_id": str(cert.certificate_id) if cert else None,
-            "completion_date": cert.date_obtention.strftime('%B %d, %Y') if cert else None,
+
+            "certificate_id": (
+                str(cert.certificate_id)
+                if cert else None
+            ),
+
+            "completion_date": (
+                cert.date_obtention.strftime('%B %d, %Y')
+                if cert else None
+            ),
         })
 
     return Response(data)
-
-
 # =====================================================
 # TEACHER RESULTS
 # =====================================================
@@ -375,8 +407,9 @@ def student_dashboard(request):
         etudiant=request.user
     )
 
-    completed_courses = results.filter(
-        note__gte=80
+    completed_courses = Progression.objects.filter(
+        etudiant=request.user,
+        progression__gte=100
     ).count()
 
     average_progress = 0
