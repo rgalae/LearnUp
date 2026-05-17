@@ -1,0 +1,142 @@
+from django.db import models
+from django.conf import settings
+from django.utils import timezone
+
+
+User = settings.AUTH_USER_MODEL
+
+
+# ---------------------------
+# PROGRAMME
+# ---------------------------
+class Programme(models.Model):
+    titre = models.CharField(max_length=255)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.titre
+
+    class Meta:
+        verbose_name = "Programme"
+        verbose_name_plural = "Programmes"
+
+
+# ---------------------------
+# COURS
+# ---------------------------
+class Cours(models.Model):
+    titre = models.CharField(max_length=255)
+    description = models.TextField()
+    enseignant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cours_enseignes')
+    programme = models.ForeignKey(Programme, on_delete=models.CASCADE, null=True, blank=True, related_name='cours')
+
+    def __str__(self):
+        return self.titre
+
+    class Meta:
+        verbose_name = "Cours"
+        verbose_name_plural = "Cours"
+
+
+# ---------------------------
+# INSCRIPTION
+# ---------------------------
+class Inscription(models.Model):
+    etudiant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='inscriptions')
+    cours = models.ForeignKey(Cours, on_delete=models.CASCADE, related_name='inscriptions')
+    date_inscription = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.etudiant} inscrit à {self.cours}"
+
+    class Meta:
+        verbose_name = "Inscription"
+        verbose_name_plural = "Inscriptions"
+        unique_together = ('etudiant', 'cours')
+
+
+# ---------------------------
+# MODULE
+# ---------------------------
+class Module(models.Model):
+    titre = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    cours = models.ForeignKey(Cours, on_delete=models.CASCADE, related_name='modules')
+    order = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.cours.titre} - {self.titre}"
+
+    class Meta:
+        verbose_name = "Module"
+        verbose_name_plural = "Modules"
+        ordering = ['order', 'id']
+
+
+# ---------------------------
+# CONTENU
+# ---------------------------
+class Contenu(models.Model):
+    titre = models.CharField(max_length=255)
+    fichier = models.FileField(upload_to='contenus/', null=True, blank=True)
+    video_url = models.URLField(null=True, blank=True)
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='contenus')
+    order = models.IntegerField(default=0)
+    date_upload = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.titre
+
+    class Meta:
+        verbose_name = "Contenu"
+        verbose_name_plural = "Contenus"
+        ordering = ['order', 'id']
+
+
+
+
+# ---------------------------
+# PROGRESSION
+# ---------------------------
+class Progression(models.Model):
+    etudiant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='progressions')
+    cours = models.ForeignKey(Cours, on_delete=models.CASCADE, related_name='progressions')
+    progression = models.FloatField(default=0)
+
+    def __str__(self):
+        return f"{self.etudiant} - {self.cours} ({self.progression}%)"
+
+    class Meta:
+        verbose_name = "Progression"
+        verbose_name_plural = "Progressions"
+        unique_together = ('etudiant', 'cours')
+
+
+# ---------------------------
+# CERTIFICAT
+# ---------------------------
+class Certificat(models.Model):
+    etudiant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='certificats')
+    cours = models.ForeignKey(Cours, on_delete=models.CASCADE, related_name='certificats')
+    date_obtention = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.etudiant} - {self.cours}"
+
+    class Meta:
+        verbose_name = "Certificat"
+        verbose_name_plural = "Certificats"
+        unique_together = ('etudiant', 'cours')
+
+# ---------------------------
+# COMPLETED CONTENT (NEW)
+# ---------------------------
+class CompletedContent(models.Model):
+    etudiant = models.ForeignKey(User, on_delete=models.CASCADE)
+    contenu = models.ForeignKey(Contenu, on_delete=models.CASCADE)
+    date_completed = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('etudiant', 'contenu')
+
+
