@@ -170,4 +170,18 @@ urlpatterns = [
         '<int:cours_id>/retake/',
         views.retake_course
     ),
-]
+
+    # =====================================================
+    # TEACHER ANALYTICS & STUDENTS
+    # =====================================================
+
+    path(
+        'teacher-analytics/',
+        views.teacher_analytics
+    ),
+
+    path(
+        'teacher-students/',
+        views.teacher_students
+    ),
+]

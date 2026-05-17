@@ -742,7 +742,6 @@ def get_certificat(request, cours_id):
         )
 
         if result.note < 80:
-
             return Response(
                 {"error": "Insufficient grade"},
                 status=status.HTTP_403_FORBIDDEN
@@ -750,16 +749,26 @@ def get_certificat(request, cours_id):
 
         certificat, created = Certificat.objects.get_or_create(
             etudiant=request.user,
-            cours_id=cours_id
+            cours_id=cours_id,
+            defaults={"score": result.note}
         )
+
+        # Update score if re-fetching
+        if not created and certificat.score != result.note:
+            certificat.score = result.note
+            certificat.save()
 
         return Response({
             "message": "Certificate generated",
-            "created": created
+            "created": created,
+            "certificate_id": str(certificat.certificate_id),
+            "student": request.user.get_full_name() or request.user.username,
+            "course": result.cours.titre,
+            "score": certificat.score,
+            "date": certificat.date_obtention.strftime('%B %d, %Y'),
         })
 
     except Resultat.DoesNotExist:
-
         return Response(
             {"error": "No result found"},
             status=status.HTTP_404_NOT_FOUND
@@ -781,56 +790,219 @@ def certificat_pdf(request, cours_id):
         )
 
         if result.note < 80:
-
             return Response(
                 {"error": "Insufficient grade"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        response = HttpResponse(
-            content_type='application/pdf'
+        certificat, _ = Certificat.objects.get_or_create(
+            etudiant=request.user,
+            cours_id=cours_id,
+            defaults={"score": result.note}
         )
 
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.units import cm
+        from reportlab.lib import colors
+        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.platypus import Table, TableStyle
+        from reportlab.pdfgen import canvas
+        import io
+
+        buffer = io.BytesIO()
+        c = canvas.Canvas(buffer, pagesize=landscape(A4))
+        width, height = landscape(A4)
+
+        # Background gradient (dark blue)
+        c.setFillColorRGB(0.05, 0.08, 0.18)
+        c.rect(0, 0, width, height, fill=True, stroke=False)
+
+        # Decorative border
+        c.setStrokeColorRGB(0.42, 0.38, 0.85)
+        c.setLineWidth(4)
+        c.rect(1.5*cm, 1.5*cm, width - 3*cm, height - 3*cm, fill=False, stroke=True)
+        c.setLineWidth(1)
+        c.setStrokeColorRGB(0.62, 0.58, 1.0)
+        c.rect(1.8*cm, 1.8*cm, width - 3.6*cm, height - 3.6*cm, fill=False, stroke=True)
+
+        # Title
+        c.setFillColorRGB(0.85, 0.82, 1.0)
+        c.setFont("Helvetica-Bold", 36)
+        c.drawCentredString(width / 2, height - 4.5*cm, "CERTIFICATE OF ACHIEVEMENT")
+
+        # Subtitle line
+        c.setFillColorRGB(0.62, 0.58, 1.0)
+        c.setFont("Helvetica", 14)
+        c.drawCentredString(width / 2, height - 5.5*cm, "This certificate is proudly presented to")
+
+        # Student name
+        student_name = request.user.get_full_name() or request.user.username
+        c.setFillColorRGB(1.0, 1.0, 1.0)
+        c.setFont("Helvetica-BoldOblique", 40)
+        c.drawCentredString(width / 2, height - 8*cm, student_name)
+
+        # Divider
+        c.setStrokeColorRGB(0.42, 0.38, 0.85)
+        c.setLineWidth(1.5)
+        c.line(width*0.2, height - 8.8*cm, width*0.8, height - 8.8*cm)
+
+        # Course
+        c.setFillColorRGB(0.7, 0.7, 1.0)
+        c.setFont("Helvetica", 15)
+        c.drawCentredString(width / 2, height - 10*cm,
+            f"for successfully completing the course")
+        c.setFillColorRGB(0.9, 0.85, 1.0)
+        c.setFont("Helvetica-Bold", 20)
+        c.drawCentredString(width / 2, height - 11.2*cm, result.cours.titre)
+
+        # Score & Date row
+        c.setFillColorRGB(0.6, 0.6, 0.9)
+        c.setFont("Helvetica", 13)
+        c.drawCentredString(width * 0.35, height - 13*cm, f"Score: {certificat.score:.0f}%")
+        c.drawCentredString(width * 0.65, height - 13*cm,
+            f"Date: {certificat.date_obtention.strftime('%B %d, %Y')}")
+
+        # Certificate ID
+        c.setFillColorRGB(0.4, 0.4, 0.6)
+        c.setFont("Helvetica", 9)
+        c.drawCentredString(width / 2, 2.8*cm,
+            f"Certificate ID: {certificat.certificate_id}")
+
+        # LearnUp watermark
+        c.setFillColorRGB(0.62, 0.58, 1.0)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawCentredString(width / 2, 2.0*cm, "LearnUp Learning Platform")
+
+        c.save()
+        buffer.seek(0)
+
+        response = HttpResponse(buffer, content_type='application/pdf')
         response['Content-Disposition'] = (
-            f'attachment; filename="certificat_{cours_id}.pdf"'
+            f'attachment; filename="certificate_{cours_id}.pdf"'
         )
-
-        doc = SimpleDocTemplate(response)
-
-        styles = getSampleStyleSheet()
-
-        content = [
-
-            Paragraph(
-                "CERTIFICATE OF ACHIEVEMENT",
-                styles["Title"]
-            ),
-
-            Spacer(1, 20),
-
-            Paragraph(
-                f"Student: {request.user.username}",
-                styles["Normal"]
-            ),
-
-            Paragraph(
-                f"Course: {result.cours.titre}",
-                styles["Normal"]
-            ),
-
-            Paragraph(
-                f"Grade: {result.note}",
-                styles["Normal"]
-            ),
-        ]
-
-        doc.build(content)
-
         return response
 
     except Resultat.DoesNotExist:
-
         return Response(
             {"error": "No result found"},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+# =====================================================
+# TEACHER ANALYTICS  (detailed with filters)
+# =====================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def teacher_analytics(request):
+    """
+    Enhanced analytics endpoint.
+    Query params:
+      course_id  - filter by specific course
+      status     - 'passed' | 'failed'
+      sort       - 'highest' | 'lowest' | 'name'
+    """
+    from results.models import Resultat
+
+    course_id = request.query_params.get('course_id')
+    filter_status = request.query_params.get('status')   # 'passed' | 'failed'
+    sort_by = request.query_params.get('sort', 'name')   # 'highest' | 'lowest' | 'name'
+
+    if course_id:
+        teacher_courses = Cours.objects.filter(id=course_id, enseignant=request.user)
+    else:
+        teacher_courses = Cours.objects.filter(enseignant=request.user)
+
+    inscriptions = Inscription.objects.filter(cours__in=teacher_courses).select_related('etudiant', 'cours')
+
+    rows = []
+    for ins in inscriptions:
+        result = Resultat.objects.filter(etudiant=ins.etudiant, cours=ins.cours).first()
+        score = result.note if result else 0
+        prog = Progression.objects.filter(etudiant=ins.etudiant, cours=ins.cours).first()
+        progression = prog.progression if prog else 0
+        cert_exists = Certificat.objects.filter(etudiant=ins.etudiant, cours=ins.cours).exists()
+
+        rows.append({
+            "student": ins.etudiant.username,
+            "student_name": ins.etudiant.get_full_name() or ins.etudiant.username,
+            "email": ins.etudiant.email,
+            "course": ins.cours.titre,
+            "course_id": ins.cours.id,
+            "score": score,
+            "progression": progression,
+            "status": "Passed" if score >= 80 else "Failed",
+            "completed": progression >= 100,
+            "certificate": cert_exists,
+        })
+
+    # Filter by status
+    if filter_status == 'passed':
+        rows = [r for r in rows if r['status'] == 'Passed']
+    elif filter_status == 'failed':
+        rows = [r for r in rows if r['status'] == 'Failed']
+
+    # Sort
+    if sort_by == 'highest':
+        rows.sort(key=lambda r: r['score'], reverse=True)
+    elif sort_by == 'lowest':
+        rows.sort(key=lambda r: r['score'])
+    else:
+        rows.sort(key=lambda r: r['student'])
+
+    # Summary stats per course
+    course_stats = []
+    for course in teacher_courses:
+        course_results = Resultat.objects.filter(cours=course)
+        enrolled = Inscription.objects.filter(cours=course).count()
+        passed = course_results.filter(note__gte=80).count()
+        avg = round(sum(r.note for r in course_results) / course_results.count(), 1) if course_results.exists() else 0
+        course_stats.append({
+            "id": course.id,
+            "titre": course.titre,
+            "enrolled": enrolled,
+            "passed": passed,
+            "failed": enrolled - passed,
+            "average_score": avg,
+        })
+
+    return Response({
+        "students": rows,
+        "course_stats": course_stats,
+        "total_students": len(rows),
+        "passed_count": sum(1 for r in rows if r['status'] == 'Passed'),
+        "failed_count": sum(1 for r in rows if r['status'] == 'Failed'),
+    })
+
+
+# =====================================================
+# TEACHER STUDENTS
+# =====================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@teacher_required
+def teacher_students(request):
+    teacher_courses = Cours.objects.filter(enseignant=request.user)
+    inscriptions = Inscription.objects.filter(cours__in=teacher_courses).select_related('etudiant', 'cours')
+
+    from results.models import Resultat
+    data = []
+    seen = set()
+    for ins in inscriptions:
+        key = (ins.etudiant.id, ins.cours.id)
+        if key in seen:
+            continue
+        seen.add(key)
+        result = Resultat.objects.filter(etudiant=ins.etudiant, cours=ins.cours).first()
+        data.append({
+            "student": ins.etudiant.username,
+            "email": ins.etudiant.email,
+            "course": ins.cours.titre,
+            "score": result.note if result else 0,
+            "status": "Passed" if (result and result.note >= 80) else "Failed",
+        })
+
+    return Response(data)

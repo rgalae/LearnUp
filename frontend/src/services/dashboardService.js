@@ -71,7 +71,24 @@ export const getTeacherStudents = async () => {
 export const getStudentResults = async () => {
   const token = localStorage.getItem("token");
 
-  const response = await api.get("/results/student-results/", {
+  const response = await api.get("/users/student-results/", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+// ============================================
+// TEACHER ANALYTICS (with filters)
+// ============================================
+
+export const getTeacherAnalytics = async (params = {}) => {
+  const token = localStorage.getItem("token");
+  const query = new URLSearchParams(params).toString();
+
+  const response = await api.get(`/cours/teacher-analytics/${query ? "?" + query : ""}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

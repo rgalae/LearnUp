@@ -283,31 +283,38 @@ def teacher_dashboard(request):
 def student_results(request):
 
     from results.models import Resultat
+    from courses.models import Certificat, Progression, Inscription
 
-    results = Resultat.objects.filter(
-        etudiant=request.user
-    )
+    inscriptions = Inscription.objects.filter(etudiant=request.user).select_related('cours')
 
     data = []
 
-    for result in results:
+    for inscription in inscriptions:
+        cours = inscription.cours
+        result = Resultat.objects.filter(etudiant=request.user, cours=cours).first()
+        prog = Progression.objects.filter(etudiant=request.user, cours=cours).first()
+        cert = Certificat.objects.filter(etudiant=request.user, cours=cours).first()
+
+        score = result.note if result else 0
+        progression = prog.progression if prog else 0
 
         data.append({
-            "cours": result.cours.titre,
-            "cours_id": result.cours.id,
-            "note": result.note,
+            "cours": cours.titre,
+            "cours_id": cours.id,
+            "note": score,
             "grade": (
-                "Excellent"
-                if result.note >= 90 else
-                "Very Good"
-                if result.note >= 80 else
-                "Good"
-                if result.note >= 70 else
-                "Average"
-                if result.note >= 50 else
+                "Excellent" if score >= 90 else
+                "Very Good" if score >= 80 else
+                "Good" if score >= 70 else
+                "Average" if score >= 50 else
                 "Failed"
             ),
-            "gpa": round(result.note / 20, 2)
+            "gpa": round(score / 20, 2),
+            "progression": progression,
+            "status": "Passed" if score >= 80 else "Failed",
+            "has_certificate": cert is not None,
+            "certificate_id": str(cert.certificate_id) if cert else None,
+            "completion_date": cert.date_obtention.strftime('%B %d, %Y') if cert else None,
         })
 
     return Response(data)

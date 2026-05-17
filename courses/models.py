@@ -115,9 +115,13 @@ class Progression(models.Model):
 # ---------------------------
 # CERTIFICAT
 # ---------------------------
+import uuid
+
 class Certificat(models.Model):
+    certificate_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     etudiant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='certificats')
     cours = models.ForeignKey(Cours, on_delete=models.CASCADE, related_name='certificats')
+    score = models.FloatField(default=0)
     date_obtention = models.DateTimeField(default=timezone.now)
 
     def __str__(self):

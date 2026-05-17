@@ -211,10 +211,30 @@ def submit_quiz(request):
         quiz.module.cours
     )
 
+    # =====================================================
+    # AUTO-GENERATE CERTIFICATE IF PASSED
+    # =====================================================
+    certificate_data = None
+    if final_score >= 80:
+        from courses.models import Certificat
+        cert, cert_created = Certificat.objects.get_or_create(
+            etudiant=request.user,
+            cours=quiz.module.cours,
+            defaults={"score": final_score}
+        )
+        if not cert_created and cert.score < final_score:
+            cert.score = final_score
+            cert.save()
+        certificate_data = {
+            "certificate_id": str(cert.certificate_id),
+            "course_id": quiz.module.cours.id,
+        }
+
     return Response({
         "success": True,
         "score": final_score,
-        "progression": progress
+        "progression": progress,
+        "certificate": certificate_data,
     })
 
 
